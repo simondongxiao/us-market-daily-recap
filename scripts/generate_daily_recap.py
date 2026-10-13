@@ -102,11 +102,17 @@ def main() -> int:
 
     if not out_docx.is_file():
         raise RuntimeError(f"Word report was not created: {out_docx}")
+    out_html = out_docx.with_suffix('.html')
+    run([str(PYTHON), str(REPO_DIR / 'scripts/convert_docx_to_mobile_html.py'), '--input', str(out_docx), '--output', str(out_html)])
+    if not out_html.is_file():
+        raise RuntimeError(f"HTML report was not created: {out_html}")
     manifest = {
         "report_date_bjt": report,
         "us_trade_date": us,
         "report_path": str(out_docx),
         "report_name": out_docx.name,
+        "html_path": str(out_html),
+        "html_name": out_html.name,
         "task_dir": str(Path(args.task_dir).resolve()),
         "generated_by": str(Path(__file__).resolve()),
     }
