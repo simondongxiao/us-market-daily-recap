@@ -17,18 +17,31 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   generate-and-notify:
-    # A GitHub-hosted runner cannot see D:\codex or the Codex task folder.
-    # The Windows self-hosted runner must be installed on this machine.
-    runs-on: [self-hosted, windows, x64]
+    runs-on: windows-latest
     env:
-      CODEX_TASK_DIR: 'C:\Users\Administrator\Documents\Codex\2026-08-10\us-market-daily-recap'
-      US_MARKET_RECAP_COMMAND: 'C:\Users\Administrator\Documents\Codex\2026-08-10\us-market-daily-recap\scripts\generate_daily_recap.py'
+      CODEX_TASK_DIR: '${{ github.workspace }}'
+      RECAP_OUTPUT_ROOT: '${{ github.workspace }}\outputs'
+      US_MARKET_SKILL_DIR: '${{ github.workspace }}\scripts\vendor'
+      US_MARKET_RECAP_COMMAND: '${{ github.workspace }}\scripts\generate_daily_recap.py'
+      GH_TOKEN: ${{ github.token }}
       FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
     steps:
+      - name: Checkout recap pipeline
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install report dependencies
+        shell: powershell
+        run: python -m pip install --disable-pip-version-check pandas numpy matplotlib requests python-docx
+
       - name: Run local skill-compatible recap pipeline and notify Feishu
         id: run-recap
         shell: powershell
