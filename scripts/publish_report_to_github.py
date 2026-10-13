@@ -29,7 +29,13 @@ def main() -> int:
     path = f"reports/{report.name}"
     endpoint = f"repos/{args.repo}/contents/{path}"
     sha = ""
-    existing = subprocess.run(["gh", "api", endpoint, "-f", f"ref={args.branch}", "--jq", ".sha"], capture_output=True, text=True)
+    # `gh api -f` switches a request to POST unless the method is explicit.
+    # The contents lookup must remain GET so an existing report can be updated.
+    existing = subprocess.run(
+        ["gh", "api", endpoint, "-X", "GET", "-f", f"ref={args.branch}", "--jq", ".sha"],
+        capture_output=True,
+        text=True,
+    )
     if existing.returncode == 0:
         sha = existing.stdout.strip()
     payload = {
