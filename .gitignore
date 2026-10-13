@@ -1,0 +1,16 @@
+# Local report artifacts and market-data caches stay on the Windows runner.
+outputs/*.docx
+outputs/*.md
+outputs/*.png
+outputs/*.svg
+outputs/*.json
+outputs/*.csv
+outputs/*.zip
+work/
+__pycache__/
+scripts/__pycache__/
+
+# Never commit local secrets or dotenv files.
+.env
+.env.*
+!.env.example
