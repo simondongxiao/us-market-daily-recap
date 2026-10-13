@@ -1,0 +1,51 @@
+name: US market daily recap
+
+on:
+  workflow_dispatch:
+    inputs:
+      report_date_bjt:
+        description: 'Beijing report date; leave blank for today'
+        required: false
+        type: string
+  schedule:
+    # GitHub supports IANA timezone-aware schedules. This is 07:00 Asia/Shanghai.
+    - cron: '0 7 * * *'
+      timezone: 'Asia/Shanghai'
+
+concurrency:
+  group: us-market-daily-recap
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  generate-and-notify:
+    # A GitHub-hosted runner cannot see D:\codex or the Codex task folder.
+    # The Windows self-hosted runner must be installed on this machine.
+    runs-on: [self-hosted, windows, x64]
+    env:
+      CODEX_TASK_DIR: 'C:\Users\Administrator\Documents\Codex\2026-08-10\us-market-daily-recap'
+      US_MARKET_RECAP_COMMAND: 'C:\Users\Administrator\Documents\Codex\2026-08-10\us-market-daily-recap\scripts\generate_daily_recap.py'
+      FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+    steps:
+      - name: Run local skill-compatible recap pipeline and notify Feishu
+        id: run-recap
+        shell: powershell
+        run: |
+          $date = '${{ inputs.report_date_bjt }}'
+          $args = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "$env:CODEX_TASK_DIR\scripts\run_daily_recap.ps1")
+          if ($date) { $args += @('-ReportDateBjt', $date) }
+          & powershell.exe @args
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $manifest = Get-Content "$env:CODEX_TASK_DIR\outputs\latest_daily_recap.json" -Raw | ConvertFrom-Json
+          "report_path=$($manifest.report_path)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "report_name=$($manifest.report_name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Upload the Word report to the Actions run
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.run-recap.outputs.report_name }}
+          path: ${{ steps.run-recap.outputs.report_path }}
+          if-no-files-found: error
+          retention-days: 14
