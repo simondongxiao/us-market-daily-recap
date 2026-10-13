@@ -23,6 +23,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--report", required=True, type=Path)
     parser.add_argument("--run-url", default="")
+    parser.add_argument("--github-url", default="")
     parser.add_argument("--status", default="已生成")
     parser.add_argument("--webhook-env", default="FEISHU_WEBHOOK_URL")
     return parser.parse_args()
@@ -57,6 +58,8 @@ def build_text(args: argparse.Namespace) -> str:
     ]
     if args.run_url:
         lines.append(f"Actions运行记录：{args.run_url}")
+    if args.github_url:
+        lines.append(f"GitHub文件：{args.github_url}")
     excerpt = read_excerpt(report)
     if excerpt:
         lines.extend(["", "摘要：", excerpt])
