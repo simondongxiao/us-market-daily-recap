@@ -26,13 +26,18 @@ function Invoke-ConfiguredGenerator {
 
     $trimmed = $Command.Trim()
     if ([string]::IsNullOrWhiteSpace($trimmed)) {
-        throw @"
+        $defaultGenerator = Join-Path $Root 'scripts\generate_daily_recap.py'
+        if (Test-Path -LiteralPath $defaultGenerator -PathType Leaf) {
+            $trimmed = $defaultGenerator
+        } else {
+            throw @"
 No daily recap generator is configured.
 Set US_MARKET_RECAP_COMMAND on the self-hosted runner to the existing local
-generation command, or pass -GeneratorCommand. The command must create a Word
-file named us_market_recap_${DateBjt}_BJT_us_<US_TRADE_DATE>_final.docx under
-$($env:RECAP_OUTPUT_DIR) (or D:\codex\outputs\us_market_daily_recaps).
+generation command, or add scripts\generate_daily_recap.py. The command must
+create a Word file named us_market_recap_${DateBjt}_BJT_us_<US_TRADE_DATE>_final.docx
+under $($env:RECAP_OUTPUT_DIR) (or D:\codex\outputs\us_market_daily_recaps).
 "@
+        }
     }
 
     $quoted = $trimmed.Trim('"')
@@ -42,7 +47,12 @@ $($env:RECAP_OUTPUT_DIR) (or D:\codex\outputs\us_market_daily_recaps).
             & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $quoted `
                 -ReportDateBjt $DateBjt -TaskDir $Root
         } elseif ($extension -eq '.py') {
-            & python.exe -u $quoted --report-date-bjt $DateBjt --task-dir $Root
+            $runnerPython = if (Test-Path -LiteralPath 'D:\python\python.exe' -PathType Leaf) {
+                'D:\python\python.exe'
+            } else {
+                (Get-Command python.exe -ErrorAction Stop).Source
+            }
+            & $runnerPython -u $quoted --report-date-bjt $DateBjt --task-dir $Root
         } else {
             throw "US_MARKET_RECAP_COMMAND must point to a .ps1 or .py file, or be a runnable command string: $Command"
         }
@@ -117,7 +127,11 @@ $runUrl = ''
 if ($env:GITHUB_SERVER_URL -and $env:GITHUB_REPOSITORY -and $env:GITHUB_RUN_ID) {
     $runUrl = "$($env:GITHUB_SERVER_URL)/$($env:GITHUB_REPOSITORY)/actions/runs/$($env:GITHUB_RUN_ID)"
 }
-$python = (Get-Command python.exe -ErrorAction Stop).Source
+$python = if (Test-Path -LiteralPath 'D:\python\python.exe' -PathType Leaf) {
+    'D:\python\python.exe'
+} else {
+    (Get-Command python.exe -ErrorAction Stop).Source
+}
 $sender = Join-Path $PSScriptRoot 'send_feishu_webhook.py'
 $senderArgs = @('-u', $sender, '--report', $report.FullName, '--status', 'generated')
 if ($runUrl) { $senderArgs += @('--run-url', $runUrl) }
