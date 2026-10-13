@@ -6,6 +6,8 @@ outputs/*.svg
 outputs/*.json
 outputs/*.csv
 outputs/*.zip
+outputs/scheduler_logs/
+outputs/latest_daily_recap.json
 work/
 __pycache__/
 scripts/__pycache__/
