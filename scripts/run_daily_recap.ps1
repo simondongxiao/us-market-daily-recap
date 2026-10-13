@@ -120,6 +120,10 @@ if ((Resolve-Path -LiteralPath $report.FullName).Path -ne (Resolve-Path -Literal
     if (Test-Path -LiteralPath $sourceMarkdown -PathType Leaf) {
         Copy-Item -LiteralPath $sourceMarkdown -Destination (Join-Path $taskOutput ([IO.Path]::GetFileName($sourceMarkdown))) -Force
     }
+    $sourceHtml = [IO.Path]::ChangeExtension($report.FullName, '.html')
+    if (Test-Path -LiteralPath $sourceHtml -PathType Leaf) {
+        Copy-Item -LiteralPath $sourceHtml -Destination (Join-Path $taskOutput ([IO.Path]::GetFileName($sourceHtml))) -Force
+    }
     $report = Get-Item -LiteralPath $localReport
 }
 
@@ -141,11 +145,13 @@ if (Test-Path -LiteralPath $publisher -PathType Leaf) {
         throw "GitHub report publication failed with exit code $LASTEXITCODE."
     }
     $githubUrl = (($publishJson | Select-Object -Last 1) | ConvertFrom-Json).html_url
+    $wordGithubUrl = (($publishJson | Select-Object -Last 1) | ConvertFrom-Json).word_url
 }
 $sender = Join-Path $PSScriptRoot 'send_feishu_webhook.py'
 $senderArgs = @('-u', $sender, '--report', $report.FullName, '--status', 'generated')
 if ($runUrl) { $senderArgs += @('--run-url', $runUrl) }
 if ($githubUrl) { $senderArgs += @('--github-url', $githubUrl) }
+if ($wordGithubUrl) { $senderArgs += @('--word-url', $wordGithubUrl) }
 & $python @senderArgs
 if ($LASTEXITCODE -ne 0) {
     throw "Feishu notification failed with exit code $LASTEXITCODE."
@@ -156,6 +162,7 @@ $manifest = [ordered]@{
     generated_at_bjt = (Resolve-ChinaNow).ToString('o')
     report_path = $report.FullName
     report_name = $report.Name
+    html_path = [IO.Path]::ChangeExtension($report.FullName, '.html')
     run_url = $runUrl
 }
 $manifestPath = Join-Path $taskOutput 'latest_daily_recap.json'
