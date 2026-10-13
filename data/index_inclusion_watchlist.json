@@ -1,0 +1,816 @@
+{
+  "version": 1,
+  "updated_at": "2026-10-13T10:57:49-04:00",
+  "entries": [
+    {
+      "ticker": "BE",
+      "company": "Bloom Energy",
+      "index_family": "S&P DJI",
+      "index_name": "S&P 500",
+      "announcement_date": "2026-09-04",
+      "first_public_at": "2026-09-04T17:15:00-04:00",
+      "effective_date": "2026-09-21",
+      "status": "EFFECTIVE_COMPLETE",
+      "source": "S&P Dow Jones Indices announcement via PR Newswire",
+      "source_url": "https://www.prnewswire.com/news-releases/bloom-energy-illumina-and-everpure-set-to-join-sp-500-others-to-join-sp-100-sp-midcap-400-and-sp-smallcap-600-302870517.html",
+      "expected_passive_demand": "positive",
+      "last_reminder_date": null,
+      "notes": "GICS Industrials; effective before open on 2026-09-21.",
+      "options_snapshot": {
+        "ticker": "BE",
+        "company": "Bloom Energy",
+        "source": "Nasdaq public option-chain endpoint",
+        "source_url": "https://www.nasdaq.com/market-activity/stocks/be/option-chain",
+        "checked_at_et": "2026-09-22T19:45:23-04:00",
+        "data_status": "available",
+        "last_trade_label": "LAST TRADE: $276.45 (AS OF SEP 22, 2026)",
+        "expiry_near": "2026-09-25",
+        "expiry_far": "2026-10-30",
+        "call_volume": 18176,
+        "put_volume": 13358,
+        "call_oi": 37163,
+        "put_oi": 45490,
+        "call_put_volume_ratio": 1.3606827369366672,
+        "call_premium_estimate": 12318271.0,
+        "put_premium_estimate": 4267475.5,
+        "iv_now": 90.17,
+        "iv_prior": null,
+        "max_strike_volume_share": 0.1349,
+        "execution_side_confirmed": false,
+        "direction_label": null,
+        "option_alerts": [
+          "strike-concentration"
+        ],
+        "expiries": [
+          {
+            "ticker": "BE",
+            "as_of": "2026-09-22T19:45:23-04:00",
+            "expiry": "2026-09-25",
+            "source": "Nasdaq public option-chain endpoint",
+            "source_url": "https://www.nasdaq.com/market-activity/stocks/be/option-chain",
+            "data_status": "available",
+            "underlying_last_available": 277.23,
+            "call_volume": 18176,
+            "put_volume": 13358,
+            "call_oi": 37163,
+            "put_oi": 45490,
+            "call_put_volume_ratio": 1.3606827369366672,
+            "call_premium_estimate": 12318271.0,
+            "put_premium_estimate": 4267475.5,
+            "max_strike_volume_share": 0.1349,
+            "iv_mean_approx": 90.17,
+            "execution_side_confirmed": false,
+            "direction_label": null,
+            "alerts": [
+              "no_threshold_alert"
+            ],
+            "limitations": [
+              "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint."
+            ]
+          },
+          {
+            "ticker": "BE",
+            "as_of": "2026-09-22T19:45:23-04:00",
+            "expiry": "2026-10-30",
+            "source": "Nasdaq public option-chain endpoint",
+            "source_url": "https://www.nasdaq.com/market-activity/stocks/be/option-chain",
+            "data_status": "available",
+            "underlying_last_available": 277.23,
+            "call_volume": 807,
+            "put_volume": 1596,
+            "call_oi": 2308,
+            "put_oi": 5983,
+            "call_put_volume_ratio": 0.5056390977443609,
+            "call_premium_estimate": 1892805.0,
+            "put_premium_estimate": 1893969.0,
+            "max_strike_volume_share": 0.2605,
+            "iv_mean_approx": 83.25,
+            "execution_side_confirmed": false,
+            "direction_label": null,
+            "alerts": [
+              "strike-concentration"
+            ],
+            "limitations": [
+              "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint."
+            ]
+          }
+        ],
+        "limitations": [
+          "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint.",
+          "Last available underlying/option timestamps are retained; verify freshness before treating as target-session data."
+        ]
+      },
+      "last_options_check_date": "2026-09-23"
+    },
+    {
+      "ticker": "P",
+      "company": "Everpure",
+      "index_family": "S&P DJI",
+      "index_name": "S&P 500",
+      "announcement_date": "2026-09-04",
+      "first_public_at": "2026-09-04T17:15:00-04:00",
+      "effective_date": "2026-09-21",
+      "status": "EFFECTIVE_COMPLETE",
+      "source": "S&P Dow Jones Indices announcement via PR Newswire",
+      "source_url": "https://www.prnewswire.com/news-releases/bloom-energy-illumina-and-everpure-set-to-join-sp-500-others-to-join-sp-100-sp-midcap-400-and-sp-smallcap-600-302870517.html",
+      "expected_passive_demand": "positive",
+      "last_reminder_date": null,
+      "notes": "GICS Information Technology; effective before open on 2026-09-21.",
+      "options_snapshot": {
+        "ticker": "P",
+        "company": "Everpure",
+        "source": "Nasdaq public option-chain endpoint",
+        "source_url": "https://www.nasdaq.com/market-activity/stocks/p/option-chain",
+        "checked_at_et": "2026-09-22T19:43:42-04:00",
+        "data_status": "available",
+        "last_trade_label": "LAST TRADE: $110.89 (AS OF SEP 22, 2026)",
+        "expiry_near": "2026-10-16",
+        "expiry_far": "2026-11-20",
+        "call_volume": 2405,
+        "put_volume": 795,
+        "call_oi": 10070,
+        "put_oi": 4944,
+        "call_put_volume_ratio": 3.0251572327044025,
+        "call_premium_estimate": 1106735.0,
+        "put_premium_estimate": 372800.5,
+        "iv_now": 70.84,
+        "iv_prior": null,
+        "max_strike_volume_share": 0.2988,
+        "execution_side_confirmed": false,
+        "direction_label": null,
+        "option_alerts": [
+          "call-heavy",
+          "put-heavy",
+          "strike-concentration"
+        ],
+        "expiries": [
+          {
+            "ticker": "P",
+            "as_of": "2026-09-22T19:43:42-04:00",
+            "expiry": "2026-10-16",
+            "source": "Nasdaq public option-chain endpoint",
+            "source_url": "https://www.nasdaq.com/market-activity/stocks/p/option-chain",
+            "data_status": "available",
+            "underlying_last_available": 110.1073,
+            "call_volume": 2405,
+            "put_volume": 795,
+            "call_oi": 10070,
+            "put_oi": 4944,
+            "call_put_volume_ratio": 3.0251572327044025,
+            "call_premium_estimate": 1106735.0,
+            "put_premium_estimate": 372800.5,
+            "max_strike_volume_share": 0.2988,
+            "iv_mean_approx": 70.84,
+            "execution_side_confirmed": false,
+            "direction_label": null,
+            "alerts": [
+              "call-heavy",
+              "strike-concentration"
+            ],
+            "limitations": [
+              "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint."
+            ]
+          },
+          {
+            "ticker": "P",
+            "as_of": "2026-09-22T19:43:42-04:00",
+            "expiry": "2026-11-20",
+            "source": "Nasdaq public option-chain endpoint",
+            "source_url": "https://www.nasdaq.com/market-activity/stocks/p/option-chain",
+            "data_status": "available",
+            "underlying_last_available": 110.1073,
+            "call_volume": 371,
+            "put_volume": 4172,
+            "call_oi": 11038,
+            "put_oi": 7680,
+            "call_put_volume_ratio": 0.08892617449664429,
+            "call_premium_estimate": 308322.5,
+            "put_premium_estimate": 776507.5,
+            "max_strike_volume_share": 0.853,
+            "iv_mean_approx": 69.03,
+            "execution_side_confirmed": false,
+            "direction_label": null,
+            "alerts": [
+              "put-heavy",
+              "strike-concentration"
+            ],
+            "limitations": [
+              "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint."
+            ]
+          }
+        ],
+        "limitations": [
+          "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint.",
+          "Last available underlying/option timestamps are retained; verify freshness before treating as target-session data."
+        ]
+      },
+      "last_options_check_date": "2026-09-23"
+    },
+    {
+      "ticker": "ILMN",
+      "company": "Illumina",
+      "index_family": "S&P DJI",
+      "index_name": "S&P 500",
+      "announcement_date": "2026-09-04",
+      "first_public_at": "2026-09-04T17:15:00-04:00",
+      "effective_date": "2026-09-21",
+      "status": "EFFECTIVE_COMPLETE",
+      "source": "S&P Dow Jones Indices announcement via PR Newswire",
+      "source_url": "https://www.prnewswire.com/news-releases/bloom-energy-illumina-and-everpure-set-to-join-sp-500-others-to-join-sp-100-sp-midcap-400-and-sp-smallcap-600-302870517.html",
+      "expected_passive_demand": "positive",
+      "last_reminder_date": null,
+      "notes": "GICS Health Care; effective before open on 2026-09-21.",
+      "options_snapshot": {
+        "ticker": "ILMN",
+        "company": "Illumina",
+        "source": "Nasdaq public option-chain endpoint",
+        "source_url": "https://www.nasdaq.com/market-activity/stocks/ilmn/option-chain",
+        "checked_at_et": "2026-09-22T19:43:42-04:00",
+        "data_status": "available",
+        "last_trade_label": "LAST TRADE: $247.46 (AS OF SEP 22, 2026)",
+        "expiry_near": "2026-10-16",
+        "expiry_far": "2026-11-20",
+        "call_volume": 239,
+        "put_volume": 769,
+        "call_oi": 1962,
+        "put_oi": 1318,
+        "call_put_volume_ratio": 0.3107932379713914,
+        "call_premium_estimate": 230152.5,
+        "put_premium_estimate": 467058.5,
+        "iv_now": 54.79,
+        "iv_prior": null,
+        "max_strike_volume_share": 0.5208,
+        "execution_side_confirmed": false,
+        "direction_label": null,
+        "option_alerts": [
+          "call-heavy",
+          "put-heavy",
+          "strike-concentration"
+        ],
+        "expiries": [
+          {
+            "ticker": "ILMN",
+            "as_of": "2026-09-22T19:43:42-04:00",
+            "expiry": "2026-10-16",
+            "source": "Nasdaq public option-chain endpoint",
+            "source_url": "https://www.nasdaq.com/market-activity/stocks/ilmn/option-chain",
+            "data_status": "available",
+            "underlying_last_available": 247.48,
+            "call_volume": 239,
+            "put_volume": 769,
+            "call_oi": 1962,
+            "put_oi": 1318,
+            "call_put_volume_ratio": 0.3107932379713914,
+            "call_premium_estimate": 230152.5,
+            "put_premium_estimate": 467058.5,
+            "max_strike_volume_share": 0.5208,
+            "iv_mean_approx": 54.79,
+            "execution_side_confirmed": false,
+            "direction_label": null,
+            "alerts": [
+              "put-heavy",
+              "strike-concentration"
+            ],
+            "limitations": [
+              "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint."
+            ]
+          },
+          {
+            "ticker": "ILMN",
+            "as_of": "2026-09-22T19:43:42-04:00",
+            "expiry": "2026-11-20",
+            "source": "Nasdaq public option-chain endpoint",
+            "source_url": "https://www.nasdaq.com/market-activity/stocks/ilmn/option-chain",
+            "data_status": "available",
+            "underlying_last_available": 247.48,
+            "call_volume": 47,
+            "put_volume": 13,
+            "call_oi": 219,
+            "put_oi": 112,
+            "call_put_volume_ratio": 3.6153846153846154,
+            "call_premium_estimate": 69555.0,
+            "put_premium_estimate": 17735.0,
+            "max_strike_volume_share": 0.2833,
+            "iv_mean_approx": 56.37,
+            "execution_side_confirmed": false,
+            "direction_label": null,
+            "alerts": [
+              "call-heavy",
+              "strike-concentration"
+            ],
+            "limitations": [
+              "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint."
+            ]
+          }
+        ],
+        "limitations": [
+          "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint.",
+          "Last available underlying/option timestamps are retained; verify freshness before treating as target-session data."
+        ]
+      },
+      "last_options_check_date": "2026-09-23"
+    },
+    {
+      "ticker": "DELL",
+      "company": "Dell Technologies",
+      "index_family": "S&P DJI",
+      "index_name": "S&P 100",
+      "announcement_date": "2026-09-04",
+      "first_public_at": "2026-09-04T17:15:00-04:00",
+      "effective_date": "2026-09-21",
+      "status": "EFFECTIVE_COMPLETE",
+      "source": "S&P Dow Jones Indices announcement via PR Newswire",
+      "source_url": "https://www.prnewswire.com/news-releases/bloom-energy-illumina-and-everpure-set-to-join-sp-500-others-to-join-sp-100-sp-midcap-400-and-sp-smallcap-600-302870517.html",
+      "expected_passive_demand": "positive",
+      "last_reminder_date": null,
+      "notes": "S&P 100 addition; effective before open on 2026-09-21.",
+      "options_snapshot": {
+        "ticker": "DELL",
+        "company": "Dell Technologies",
+        "source": "Nasdaq public option-chain endpoint",
+        "source_url": "https://www.nasdaq.com/market-activity/stocks/dell/option-chain",
+        "checked_at_et": "2026-09-22T19:43:42-04:00",
+        "data_status": "available",
+        "last_trade_label": "LAST TRADE: $549.06 (AS OF SEP 22, 2026 7:30 PM ET)",
+        "expiry_near": "2026-09-25",
+        "expiry_far": "2026-10-30",
+        "call_volume": 32395,
+        "put_volume": 23540,
+        "call_oi": 30805,
+        "put_oi": 49832,
+        "call_put_volume_ratio": 1.3761682242990654,
+        "call_premium_estimate": 27972971.0,
+        "put_premium_estimate": 31764045.0,
+        "iv_now": 74.87,
+        "iv_prior": null,
+        "max_strike_volume_share": 0.1333,
+        "execution_side_confirmed": false,
+        "direction_label": null,
+        "option_alerts": [
+          "no_threshold_alert"
+        ],
+        "expiries": [
+          {
+            "ticker": "DELL",
+            "as_of": "2026-09-22T19:43:42-04:00",
+            "expiry": "2026-09-25",
+            "source": "Nasdaq public option-chain endpoint",
+            "source_url": "https://www.nasdaq.com/market-activity/stocks/dell/option-chain",
+            "data_status": "available",
+            "underlying_last_available": 554.42,
+            "call_volume": 32395,
+            "put_volume": 23540,
+            "call_oi": 30805,
+            "put_oi": 49832,
+            "call_put_volume_ratio": 1.3761682242990654,
+            "call_premium_estimate": 27972971.0,
+            "put_premium_estimate": 31764045.0,
+            "max_strike_volume_share": 0.1333,
+            "iv_mean_approx": 74.87,
+            "execution_side_confirmed": false,
+            "direction_label": null,
+            "alerts": [
+              "no_threshold_alert"
+            ],
+            "limitations": [
+              "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint."
+            ]
+          },
+          {
+            "ticker": "DELL",
+            "as_of": "2026-09-22T19:43:42-04:00",
+            "expiry": "2026-10-30",
+            "source": "Nasdaq public option-chain endpoint",
+            "source_url": "https://www.nasdaq.com/market-activity/stocks/dell/option-chain",
+            "data_status": "available",
+            "underlying_last_available": 554.42,
+            "call_volume": 679,
+            "put_volume": 1027,
+            "call_oi": 1762,
+            "put_oi": 2419,
+            "call_put_volume_ratio": 0.6611489776046738,
+            "call_premium_estimate": 2101996.0,
+            "put_premium_estimate": 2033829.0,
+            "max_strike_volume_share": 0.0651,
+            "iv_mean_approx": 62.2,
+            "execution_side_confirmed": false,
+            "direction_label": null,
+            "alerts": [
+              "no_threshold_alert"
+            ],
+            "limitations": [
+              "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint."
+            ]
+          }
+        ],
+        "limitations": [
+          "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint.",
+          "Last available underlying/option timestamps are retained; verify freshness before treating as target-session data."
+        ]
+      },
+      "last_options_check_date": "2026-09-23"
+    },
+    {
+      "ticker": "PANW",
+      "company": "Palo Alto Networks",
+      "index_family": "S&P DJI",
+      "index_name": "S&P 100",
+      "announcement_date": "2026-09-04",
+      "first_public_at": "2026-09-04T17:15:00-04:00",
+      "effective_date": "2026-09-21",
+      "status": "EFFECTIVE_COMPLETE",
+      "source": "S&P Dow Jones Indices announcement via PR Newswire",
+      "source_url": "https://www.prnewswire.com/news-releases/bloom-energy-illumina-and-everpure-set-to-join-sp-500-others-to-join-sp-100-sp-midcap-400-and-sp-smallcap-600-302870517.html",
+      "expected_passive_demand": "positive",
+      "last_reminder_date": null,
+      "notes": "S&P 100 addition; effective before open on 2026-09-21.",
+      "options_snapshot": {
+        "ticker": "PANW",
+        "company": "Palo Alto Networks",
+        "source": "Nasdaq public option-chain endpoint",
+        "source_url": "https://www.nasdaq.com/market-activity/stocks/panw/option-chain",
+        "checked_at_et": "2026-09-22T19:43:42-04:00",
+        "data_status": "available",
+        "last_trade_label": "LAST TRADE: $374.57 (AS OF SEP 22, 2026)",
+        "expiry_near": "2026-09-25",
+        "expiry_far": "2026-10-30",
+        "call_volume": 7419,
+        "put_volume": 4535,
+        "call_oi": 13819,
+        "put_oi": 13495,
+        "call_put_volume_ratio": 1.6359426681367144,
+        "call_premium_estimate": 12334952.0,
+        "put_premium_estimate": 482714.5,
+        "iv_now": 72.16,
+        "iv_prior": null,
+        "max_strike_volume_share": 0.2073,
+        "execution_side_confirmed": false,
+        "direction_label": null,
+        "option_alerts": [
+          "strike-concentration"
+        ],
+        "expiries": [
+          {
+            "ticker": "PANW",
+            "as_of": "2026-09-22T19:43:42-04:00",
+            "expiry": "2026-09-25",
+            "source": "Nasdaq public option-chain endpoint",
+            "source_url": "https://www.nasdaq.com/market-activity/stocks/panw/option-chain",
+            "data_status": "available",
+            "underlying_last_available": 374.9627,
+            "call_volume": 7419,
+            "put_volume": 4535,
+            "call_oi": 13819,
+            "put_oi": 13495,
+            "call_put_volume_ratio": 1.6359426681367144,
+            "call_premium_estimate": 12334952.0,
+            "put_premium_estimate": 482714.5,
+            "max_strike_volume_share": 0.2073,
+            "iv_mean_approx": 72.16,
+            "execution_side_confirmed": false,
+            "direction_label": null,
+            "alerts": [
+              "strike-concentration"
+            ],
+            "limitations": [
+              "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint."
+            ]
+          },
+          {
+            "ticker": "PANW",
+            "as_of": "2026-09-22T19:43:42-04:00",
+            "expiry": "2026-10-30",
+            "source": "Nasdaq public option-chain endpoint",
+            "source_url": "https://www.nasdaq.com/market-activity/stocks/panw/option-chain",
+            "data_status": "available",
+            "underlying_last_available": 374.9627,
+            "call_volume": 309,
+            "put_volume": 227,
+            "call_oi": 2111,
+            "put_oi": 1865,
+            "call_put_volume_ratio": 1.3612334801762114,
+            "call_premium_estimate": 285988.0,
+            "put_premium_estimate": 171309.0,
+            "max_strike_volume_share": 0.1567,
+            "iv_mean_approx": 53.09,
+            "execution_side_confirmed": false,
+            "direction_label": null,
+            "alerts": [
+              "no_threshold_alert"
+            ],
+            "limitations": [
+              "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint."
+            ]
+          }
+        ],
+        "limitations": [
+          "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint.",
+          "Last available underlying/option timestamps are retained; verify freshness before treating as target-session data."
+        ]
+      },
+      "last_options_check_date": "2026-09-23"
+    },
+    {
+      "ticker": "ANET",
+      "company": "Arista Networks",
+      "index_family": "S&P DJI",
+      "index_name": "S&P 100",
+      "announcement_date": "2026-09-04",
+      "first_public_at": "2026-09-04T17:15:00-04:00",
+      "effective_date": "2026-09-21",
+      "status": "EFFECTIVE_COMPLETE",
+      "source": "S&P Dow Jones Indices announcement via PR Newswire",
+      "source_url": "https://www.prnewswire.com/news-releases/bloom-energy-illumina-and-everpure-set-to-join-sp-500-others-to-join-sp-100-sp-midcap-400-and-sp-smallcap-600-302870517.html",
+      "expected_passive_demand": "positive",
+      "last_reminder_date": null,
+      "notes": "S&P 100 addition; effective before open on 2026-09-21.",
+      "options_snapshot": {
+        "ticker": "ANET",
+        "company": "Arista Networks",
+        "source": "Nasdaq public option-chain endpoint",
+        "source_url": "https://www.nasdaq.com/market-activity/stocks/anet/option-chain",
+        "checked_at_et": "2026-09-22T19:43:42-04:00",
+        "data_status": "available",
+        "last_trade_label": "LAST TRADE: $205.1 (AS OF SEP 22, 2026)",
+        "expiry_near": "2026-09-25",
+        "expiry_far": "2026-10-30",
+        "call_volume": 3248,
+        "put_volume": 1055,
+        "call_oi": 15220,
+        "put_oi": 9337,
+        "call_put_volume_ratio": 3.0786729857819903,
+        "call_premium_estimate": 1304700.5,
+        "put_premium_estimate": 69762.0,
+        "iv_now": 56.07,
+        "iv_prior": null,
+        "max_strike_volume_share": 0.1592,
+        "execution_side_confirmed": false,
+        "direction_label": null,
+        "option_alerts": [
+          "call-heavy",
+          "strike-concentration"
+        ],
+        "expiries": [
+          {
+            "ticker": "ANET",
+            "as_of": "2026-09-22T19:43:42-04:00",
+            "expiry": "2026-09-25",
+            "source": "Nasdaq public option-chain endpoint",
+            "source_url": "https://www.nasdaq.com/market-activity/stocks/anet/option-chain",
+            "data_status": "available",
+            "underlying_last_available": 205.18,
+            "call_volume": 3248,
+            "put_volume": 1055,
+            "call_oi": 15220,
+            "put_oi": 9337,
+            "call_put_volume_ratio": 3.0786729857819903,
+            "call_premium_estimate": 1304700.5,
+            "put_premium_estimate": 69762.0,
+            "max_strike_volume_share": 0.1592,
+            "iv_mean_approx": 56.07,
+            "execution_side_confirmed": false,
+            "direction_label": null,
+            "alerts": [
+              "call-heavy"
+            ],
+            "limitations": [
+              "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint."
+            ]
+          },
+          {
+            "ticker": "ANET",
+            "as_of": "2026-09-22T19:43:42-04:00",
+            "expiry": "2026-10-30",
+            "source": "Nasdaq public option-chain endpoint",
+            "source_url": "https://www.nasdaq.com/market-activity/stocks/anet/option-chain",
+            "data_status": "available",
+            "underlying_last_available": 205.18,
+            "call_volume": 697,
+            "put_volume": 194,
+            "call_oi": 1435,
+            "put_oi": 521,
+            "call_put_volume_ratio": 3.5927835051546393,
+            "call_premium_estimate": 587947.5,
+            "put_premium_estimate": 66265.5,
+            "max_strike_volume_share": 0.5589,
+            "iv_mean_approx": 50.9,
+            "execution_side_confirmed": false,
+            "direction_label": null,
+            "alerts": [
+              "call-heavy",
+              "strike-concentration"
+            ],
+            "limitations": [
+              "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint."
+            ]
+          }
+        ],
+        "limitations": [
+          "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint.",
+          "Last available underlying/option timestamps are retained; verify freshness before treating as target-session data."
+        ]
+      },
+      "last_options_check_date": "2026-09-23"
+    },
+    {
+      "ticker": "SNDK",
+      "company": "SanDisk",
+      "index_family": "S&P DJI",
+      "index_name": "S&P 100",
+      "announcement_date": "2026-09-04",
+      "first_public_at": "2026-09-04T17:15:00-04:00",
+      "effective_date": "2026-09-21",
+      "status": "EFFECTIVE_COMPLETE",
+      "source": "S&P Dow Jones Indices announcement via PR Newswire",
+      "source_url": "https://www.prnewswire.com/news-releases/bloom-energy-illumina-and-everpure-set-to-join-sp-500-others-to-join-sp-100-sp-midcap-400-and-sp-smallcap-600-302870517.html",
+      "expected_passive_demand": "positive",
+      "last_reminder_date": null,
+      "notes": "S&P 100 addition; effective before open on 2026-09-21.",
+      "options_snapshot": {
+        "ticker": "SNDK",
+        "company": "SanDisk",
+        "source": "Nasdaq public option-chain endpoint",
+        "source_url": "https://www.nasdaq.com/market-activity/stocks/sndk/option-chain",
+        "checked_at_et": "2026-10-13T10:57:49-04:00",
+        "data_status": "available",
+        "last_trade_label": "LAST TRADE: $1430.965 (AS OF OCT 13, 2026 10:58 AM ET)",
+        "expiry_near": "2026-10-16",
+        "expiry_far": "2026-11-06",
+        "call_volume": 23838,
+        "put_volume": 12274,
+        "call_oi": 69631,
+        "put_oi": 69231,
+        "call_put_volume_ratio": 1.9421541469773504,
+        "call_premium_estimate": 54787374.5,
+        "put_premium_estimate": 37012225.0,
+        "iv_now": 97.53,
+        "iv_prior": null,
+        "max_strike_volume_share": 0.0767,
+        "execution_side_confirmed": false,
+        "direction_label": null,
+        "option_alerts": [
+          "no_threshold_alert"
+        ],
+        "expiries": [
+          {
+            "ticker": "SNDK",
+            "as_of": "2026-10-13T10:57:49-04:00",
+            "expiry": "2026-10-16",
+            "source": "Nasdaq public option-chain endpoint",
+            "source_url": "https://www.nasdaq.com/market-activity/stocks/sndk/option-chain",
+            "data_status": "available",
+            "underlying_last_available": 1430.965,
+            "call_volume": 23838,
+            "put_volume": 12274,
+            "call_oi": 69631,
+            "put_oi": 69231,
+            "call_put_volume_ratio": 1.9421541469773504,
+            "call_premium_estimate": 54787374.5,
+            "put_premium_estimate": 37012225.0,
+            "max_strike_volume_share": 0.0767,
+            "iv_mean_approx": 97.53,
+            "execution_side_confirmed": false,
+            "direction_label": null,
+            "alerts": [
+              "no_threshold_alert"
+            ],
+            "limitations": [
+              "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint."
+            ]
+          },
+          {
+            "ticker": "SNDK",
+            "as_of": "2026-10-13T10:57:49-04:00",
+            "expiry": "2026-11-06",
+            "source": "Nasdaq public option-chain endpoint",
+            "source_url": "https://www.nasdaq.com/market-activity/stocks/sndk/option-chain",
+            "data_status": "available",
+            "underlying_last_available": 1430.965,
+            "call_volume": 461,
+            "put_volume": 495,
+            "call_oi": 4325,
+            "put_oi": 4996,
+            "call_put_volume_ratio": 0.9313131313131313,
+            "call_premium_estimate": 2388398.5,
+            "put_premium_estimate": 4858205.0,
+            "max_strike_volume_share": 0.159,
+            "iv_mean_approx": 73.91,
+            "execution_side_confirmed": false,
+            "direction_label": null,
+            "alerts": [
+              "no_threshold_alert"
+            ],
+            "limitations": [
+              "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint."
+            ]
+          }
+        ],
+        "limitations": [
+          "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint.",
+          "Last available underlying/option timestamps are retained; verify freshness before treating as target-session data."
+        ]
+      },
+      "last_options_check_date": "2026-10-13"
+    },
+    {
+      "ticker": "MRNA",
+      "company": "Moderna",
+      "index_family": "Nasdaq",
+      "index_name": "Nasdaq-100",
+      "announcement_date": "2026-10-01",
+      "first_public_at": "2026-10-01T20:00:00-04:00",
+      "effective_date": "2026-10-09",
+      "status": "EFFECTIVE_COMPLETE",
+      "source": "Nasdaq official press release",
+      "source_url": "https://www.nasdaq.com/press-release/moderna-inc-join-nasdaq-100-indexr-beginning-october-9-2026-2026-10-02",
+      "expected_passive_demand": "positive",
+      "last_reminder_date": "2026-10-10",
+      "notes": "MRNA replaced WBD before market open on 2026-10-09; closed after one completion note in the 2026-10-10 recap.",
+      "options_snapshot": {
+        "ticker": "MRNA",
+        "company": "Moderna",
+        "source": "Nasdaq public option-chain endpoint",
+        "source_url": "https://www.nasdaq.com/market-activity/stocks/mrna/option-chain",
+        "checked_at_et": "2026-10-13T10:57:49-04:00",
+        "data_status": "available",
+        "last_trade_label": "LAST TRADE: $211.555 (AS OF OCT 13, 2026 10:58 AM ET)",
+        "expiry_near": "2026-10-16",
+        "expiry_far": "2026-11-06",
+        "call_volume": 7429,
+        "put_volume": 7159,
+        "call_oi": 80141,
+        "put_oi": 86336,
+        "call_put_volume_ratio": 1.0377147646319318,
+        "call_premium_estimate": 3543806.0,
+        "put_premium_estimate": 2738982.5,
+        "iv_now": 100.78,
+        "iv_prior": null,
+        "max_strike_volume_share": 0.1114,
+        "execution_side_confirmed": false,
+        "direction_label": null,
+        "option_alerts": [
+          "no_threshold_alert"
+        ],
+        "expiries": [
+          {
+            "ticker": "MRNA",
+            "as_of": "2026-10-13T10:57:49-04:00",
+            "expiry": "2026-10-16",
+            "source": "Nasdaq public option-chain endpoint",
+            "source_url": "https://www.nasdaq.com/market-activity/stocks/mrna/option-chain",
+            "data_status": "available",
+            "underlying_last_available": 211.555,
+            "call_volume": 7429,
+            "put_volume": 7159,
+            "call_oi": 80141,
+            "put_oi": 86336,
+            "call_put_volume_ratio": 1.0377147646319318,
+            "call_premium_estimate": 3543806.0,
+            "put_premium_estimate": 2738982.5,
+            "max_strike_volume_share": 0.1114,
+            "iv_mean_approx": 100.78,
+            "execution_side_confirmed": false,
+            "direction_label": null,
+            "alerts": [
+              "no_threshold_alert"
+            ],
+            "limitations": [
+              "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint."
+            ]
+          },
+          {
+            "ticker": "MRNA",
+            "as_of": "2026-10-13T10:57:49-04:00",
+            "expiry": "2026-11-06",
+            "source": "Nasdaq public option-chain endpoint",
+            "source_url": "https://www.nasdaq.com/market-activity/stocks/mrna/option-chain",
+            "data_status": "available",
+            "underlying_last_available": 211.555,
+            "call_volume": 114,
+            "put_volume": 162,
+            "call_oi": 2612,
+            "put_oi": 1746,
+            "call_put_volume_ratio": 0.7037037037037037,
+            "call_premium_estimate": 197795.0,
+            "put_premium_estimate": 313257.5,
+            "max_strike_volume_share": 0.1522,
+            "iv_mean_approx": 114.77,
+            "execution_side_confirmed": false,
+            "direction_label": null,
+            "alerts": [
+              "no_threshold_alert"
+            ],
+            "limitations": [
+              "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint."
+            ]
+          }
+        ],
+        "limitations": [
+          "Nasdaq chain does not provide execution side, sweep/block labels, or an IV history in this endpoint.",
+          "Last available underlying/option timestamps are retained; verify freshness before treating as target-session data."
+        ]
+      },
+      "last_options_check_date": "2026-10-13"
+    }
+  ]
+}
