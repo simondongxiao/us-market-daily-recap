@@ -13,6 +13,9 @@ from pathlib import Path
 
 REPO_DIR = Path(__file__).resolve().parents[1]
 SKILL_DIR = Path(os.environ.get("US_MARKET_SKILL_DIR", r"D:\codex\skills\us-market-daily-recap"))
+if not SKILL_DIR.exists():
+    SKILL_DIR = REPO_DIR / "scripts/vendor"
+TOOLS_DIR = SKILL_DIR / "scripts" if (SKILL_DIR / "scripts").exists() else SKILL_DIR
 OUTPUT_ROOT = Path(os.environ.get("RECAP_OUTPUT_ROOT", r"D:\codex\outputs\us_market_daily_recaps"))
 PYTHON = Path(sys.executable)
 
@@ -73,6 +76,7 @@ def main() -> int:
         '"2026-10-12", "2026-10-13", "5m"': f'"{us}", "{report}", "5m"',
         '"2025-09-01", "2026-10-13"': f'"2025-09-01", "{report}"',
         'end: str = "2026-10-14"': f'end: str = "{tomorrow}"',
+        'Path(r"D:\\codex\\outputs\\us_market_daily_recaps\\2026-10-10\\sp500_members.csv")': f'Path(r"{REPO_DIR / "data/sp500_members.csv"}")',
     })
     materialize(REPO_DIR / "scripts/templates/make_assets_template.py", runtime / "make_assets.py", {
         'Path(r"D:\\codex\\outputs\\us_market_daily_recaps\\2026-10-13")': f'Path(r"{root}")',
@@ -86,10 +90,13 @@ def main() -> int:
     })
 
     run([str(PYTHON), str(runtime / "collect.py")])
-    run([str(PYTHON), str(SKILL_DIR / "scripts/rotation_engine.py"), "--date", report, "--root", str(root)])
+    run([str(PYTHON), str(TOOLS_DIR / "rotation_engine.py"), "--date", report, "--root", str(root)])
     tickers = "LITE COHR CIEN AAOI MU SNDK NVDA AVGO META FICO MRNA TWST CRDO MRVL GME".split()
-    run([str(PYTHON), str(SKILL_DIR / "scripts/option_chain_collect.py"), "--date", report, "--out", str(root / "options_chain.json"), "--tickers", *tickers])
-    run([str(PYTHON), str(SKILL_DIR / "scripts/index_inclusion_watch.py"), "--date", report, "--out", str(root / "index_inclusion_watch.json")])
+    run([str(PYTHON), str(TOOLS_DIR / "option_chain_collect.py"), "--date", report, "--out", str(root / "options_chain.json"), "--tickers", *tickers])
+    ledger = Path(os.environ.get("INDEX_INCLUSION_LEDGER", str(OUTPUT_ROOT / "index_inclusion_watchlist.json")))
+    if not ledger.exists():
+        ledger = REPO_DIR / "data/index_inclusion_watchlist.json"
+    run([str(PYTHON), str(TOOLS_DIR / "index_inclusion_watch.py"), "--date", report, "--ledger", str(ledger), "--out", str(root / "index_inclusion_watch.json")])
     run([str(PYTHON), str(runtime / "make_assets.py")])
     run([str(PYTHON), str(runtime / "build.py")])
 
