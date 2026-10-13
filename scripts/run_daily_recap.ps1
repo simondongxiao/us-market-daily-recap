@@ -132,9 +132,20 @@ $python = if (Test-Path -LiteralPath 'D:\python\python.exe' -PathType Leaf) {
 } else {
     (Get-Command python.exe -ErrorAction Stop).Source
 }
+$githubUrl = ''
+$publisher = Join-Path $PSScriptRoot 'publish_report_to_github.py'
+if (Test-Path -LiteralPath $publisher -PathType Leaf) {
+    $publishArgs = @('-u', $publisher, '--report', $report.FullName)
+    $publishJson = & $python @publishArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "GitHub report publication failed with exit code $LASTEXITCODE."
+    }
+    $githubUrl = (($publishJson | Select-Object -Last 1) | ConvertFrom-Json).html_url
+}
 $sender = Join-Path $PSScriptRoot 'send_feishu_webhook.py'
 $senderArgs = @('-u', $sender, '--report', $report.FullName, '--status', 'generated')
 if ($runUrl) { $senderArgs += @('--run-url', $runUrl) }
+if ($githubUrl) { $senderArgs += @('--github-url', $githubUrl) }
 & $python @senderArgs
 if ($LASTEXITCODE -ne 0) {
     throw "Feishu notification failed with exit code $LASTEXITCODE."
