@@ -5,6 +5,8 @@
 - `.github/workflows/us-market-daily-recap.yml`：每天北京时间 07:00 触发，也支持手动触发。
 - `scripts/run_daily_recap.ps1`：严格按北京时间日期寻找新生成的 Word 报告，拒绝发送旧报告，并把报告复制到当前任务目录的 `outputs`。
 - `scripts/send_feishu_webhook.py`：读取 `FEISHU_WEBHOOK_URL`，向飞书自定义机器人发送短文本通知，不把 webhook 写入仓库。
+- `scripts/generate_daily_recap.py`：按北京时间日期解析最近完成的美股交易日，执行采集、轮动、期权、指数纳入、图表和 Word 生成。
+- `scripts/run_daily_recap_task.ps1`：Windows 计划任务入口，保留日志并调用同一条日报链路。
 
 ## 为什么使用 Windows 自托管 runner
 
@@ -48,3 +50,7 @@ $env:CODEX_TASK_DIR = 'C:\Users\Administrator\Documents\Codex\2026-08-10\us-mark
 ```
 
 这会先执行生成器，再检查本次启动后是否出现对应日期的新 `.docx`，最后才发送飞书。不要用 `-SkipGenerate` 作为正常定时路径；它只适合你已经在同一时间生成完报告后的故障排查。
+
+## 本机 07:00 计划任务
+
+如果 GitHub self-hosted runner 尚未安装，Windows 计划任务 `Codex US Market Daily Recap` 仍可直接执行同一条本地链路。它以 SYSTEM 身份运行，使用 `D:\python\python.exe`，把报告复制到当前任务目录的 `outputs`，并写入 `outputs\scheduler_logs`。GitHub Actions workflow 仍保留为远端仓库的可审计执行入口和 artifact 保存入口。
