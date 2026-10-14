@@ -50,8 +50,16 @@ def latest_us_session(report_date: dt.date) -> dt.date:
 
 def materialize(template: Path, destination: Path, replacements: dict[str, str]) -> None:
     text = template.read_text(encoding="utf-8")
-    for old, new in replacements.items():
-        text = text.replace(old, new)
+    # Protect replacement values from later date substitutions. For example,
+    # an output path containing the template date must not be rewritten again
+    # when the generic template date is replaced below.
+    tokens: dict[str, str] = {}
+    for index, (old, new) in enumerate(replacements.items()):
+        token = f"__CODEX_REPLACEMENT_{index}__"
+        text = text.replace(old, token)
+        tokens[token] = new
+    for token, new in tokens.items():
+        text = text.replace(token, new)
     destination.write_text(text, encoding="utf-8")
 
 
