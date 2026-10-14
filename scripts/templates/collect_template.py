@@ -58,7 +58,10 @@ def fetch_chart(symbol: str, start: str = "2025-01-01", end: str = "2026-10-14",
             quote = (result.get("indicators") or {}).get("quote", [{}])[0]
             frame = pd.DataFrame({k: quote.get(k, []) for k in ["open", "high", "low", "close", "volume"]}, index=pd.to_datetime(timestamps, unit="s", utc=True))
             tz = (result.get("meta") or {}).get("exchangeTimezoneName", "America/New_York")
-            frame.index = frame.index.tz_convert(tz).tz_localize(None).normalize()
+            converted = frame.index.tz_convert(tz).tz_localize(None)
+            # Daily bars use session dates; intraday bars retain their clock
+            # time so the regular-session and closing-auction checks work.
+            frame.index = converted.normalize() if interval.endswith("d") else converted
             frame = frame[~frame.index.duplicated(keep="last")].sort_index()
             return frame.dropna(subset=["close"])
         except Exception as exc:  # Yahoo may transiently return 429/empty results.
@@ -67,9 +70,31 @@ def fetch_chart(symbol: str, start: str = "2025-01-01", end: str = "2026-10-14",
     raise RuntimeError(f"{symbol}: {last_error}")
 
 
+def fill_target_cash_session(symbol: str, frame: pd.DataFrame) -> pd.DataFrame:
+    """Reconstruct a missing completed daily close from regular-session 5m bars."""
+    target = frame.loc[frame.index == DAY, "close"] if DAY in frame.index else pd.Series(dtype=float)
+    if not target.empty and target.notna().any():
+        return frame
+    next_day = (DAY + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+    intraday = fetch_chart(symbol, DAY.strftime("%Y-%m-%d"), next_day, "5m")
+    intraday = intraday.between_time("09:30", "16:00").dropna(subset=["close"])
+    if intraday.empty:
+        raise RuntimeError(f"target date missing after 5m fallback; last={frame.index[-1] if len(frame) else 'none'}")
+    bar = pd.DataFrame({
+        "open": [float(intraday["open"].dropna().iloc[0])],
+        "high": [float(intraday["high"].max())],
+        "low": [float(intraday["low"].min())],
+        "close": [float(intraday["close"].iloc[-1])],
+        "volume": [float(intraday["volume"].fillna(0).sum())],
+    }, index=pd.DatetimeIndex([DAY]))
+    frame = frame.drop(index=DAY, errors="ignore")
+    return pd.concat([frame, bar]).sort_index()
+
+
 def save_symbol(symbol: str) -> dict:
     try:
         frame = fetch_chart(symbol)
+        frame = fill_target_cash_session(symbol, frame)
         out = frame.rename(columns={"close": "Close", "open": "Open", "high": "High", "low": "Low", "volume": "Volume"})
         out.index.name = "Date"
         out.to_csv(ROOT / (symbol.replace("^", "idx_").replace("=", "_") + "_daily.csv"))
@@ -111,7 +136,7 @@ def collect_intraday() -> list[dict]:
     rows = []
     for symbol in ["SPY", "QQQ", "RSP", "IWM", "SOXX", "IGV", "XLE", "XLC", "XLK"]:
         try:
-            frame = fetch_chart(symbol, "2026-10-12", "2026-10-13", "5m")
+            frame = fetch_chart(symbol, "2026-10-13", "2026-10-14", "5m")
             frame = frame.between_time("09:30", "16:00")
             frame.rename(columns={"close": "Close", "open": "Open", "high": "High", "low": "Low", "volume": "Volume"}, inplace=True)
             frame.to_csv(ROOT / f"{symbol}_intraday.csv")
@@ -137,7 +162,7 @@ def collect_breadth() -> None:
     symbols = [str(x).replace(".", "-") for x in members["Symbol"].dropna()]
     def one(symbol: str) -> dict:
         try:
-            frame = fetch_chart(symbol, "2025-09-01", "2026-10-13")
+            frame = fill_target_cash_session(symbol, fetch_chart(symbol, "2025-09-01", "2026-10-14"))
             close = frame["close"].dropna()
             high = frame["high"].dropna()
             low = frame["low"].dropna()
