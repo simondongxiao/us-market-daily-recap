@@ -8,9 +8,10 @@ on:
         required: false
         type: string
   schedule:
-    # GitHub supports IANA timezone-aware schedules. This is 07:00 Asia/Shanghai.
-    - cron: '0 7 * * *'
-      timezone: 'Asia/Shanghai'
+    # GitHub's default cron timezone is UTC: 23:00 UTC = 07:00 Beijing time.
+    # Keeping one explicit UTC expression avoids duplicate or missed runs when
+    # timezone-aware scheduling is rolled out unevenly across repositories.
+    - cron: '0 23 * * *'
 
 concurrency:
   group: us-market-daily-recap
