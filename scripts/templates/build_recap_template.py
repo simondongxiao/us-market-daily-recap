@@ -14,6 +14,8 @@ from docx.shared import Inches, Pt, RGBColor
 
 ROOT = Path(r"D:\codex\outputs\us_market_daily_recaps\2026-10-13")
 OUT = Path(r"D:\codex\outputs\us_market_daily_recaps\us_market_recap_2026-10-13_BJT_us_2026-10-12_final.docx")
+REPORT_BJT = "2026-10-13"
+US_TRADE_DATE = "2026-10-12"
 Q = json.loads((ROOT / "quotes.json").read_text(encoding="utf-8"))
 B = json.loads((ROOT / "breadth.json").read_text(encoding="utf-8"))
 ROT = json.loads((ROOT / "rotation_engine.json").read_text(encoding="utf-8"))
@@ -40,6 +42,50 @@ def ret_n(symbol: str, n: int) -> float:
 def mean_return(names: list[str]) -> float:
     xs = [Q[s]["day"] for s in names if s in Q and Q[s].get("day") is not None]
     return sum(xs) / len(xs) if xs else float("nan")
+
+
+STOCKS = set(Q) - {"^DJI", "^GSPC", "^IXIC", "^RUT", "^VIX", "^VVIX", "^SKEW", "^TNX", "DX-Y.NYB", "CL=F", "BZ=F", "GC=F", "HG=F", "BTC-USD"}
+
+
+SECTOR_LABELS = {
+    "XLK": "科技", "XLC": "通信服务", "XLY": "可选消费", "XLP": "必选消费",
+    "XLF": "金融", "XLI": "工业", "XLE": "能源", "XLB": "材料",
+    "XLV": "医疗保健", "XLRE": "房地产", "XLU": "公用事业", "SOXX": "半导体",
+    "SMH": "半导体", "IGV": "软件", "XBI": "生物医药", "IHI": "医疗器械",
+    "CIBR": "网络安全", "SKYY": "云计算", "XME": "金属与矿业", "COPX": "铜矿",
+    "GDX": "黄金矿业", "KRE": "区域银行", "XRT": "零售", "XHB": "住宅建筑",
+    "ITA": "航空航天/国防", "ARKK": "创新成长",
+}
+
+
+def available_days(names: list[str]) -> list[tuple[str, float]]:
+    return [(s, float(Q[s]["day"])) for s in names if s in Q and Q[s].get("day") is not None]
+
+
+sector_days = available_days(list(SECTOR_LABELS))
+sector_days.sort(key=lambda x: x[1], reverse=True)
+sector_leaders = "、".join(f"{s}（{SECTOR_LABELS[s]}）{v:+.2f}%" for s, v in sector_days[:3]) or "数据不可得"
+sector_laggards = "、".join(f"{s}（{SECTOR_LABELS[s]}）{v:+.2f}%" for s, v in sector_days[-3:]) or "数据不可得"
+semi_stats = ROT.get("stats", {}).get("semi", {})
+software_stats = ROT.get("stats", {}).get("software", {})
+semi_eq = float(semi_stats.get("equal_weight_1d", float("nan")))
+software_eq = float(software_stats.get("equal_weight_1d", float("nan")))
+semi_spread = semi_eq - software_eq
+exception_names = ["LITE", "CIEN", "COHR", "AAOI", "CRDO", "FICO", "FIGS", "MDT", "TWST"]
+exception_text = "、".join(f"{s} {pct(s)}" for s in exception_names if s in Q and Q[s].get("day") is not None) or "未识别出可用的单股异常"
+ai_tier_1 = ["NVDA", "AVGO", "MSFT", "META"]
+ai_tier_2 = ["MU", "SNDK", "MRVL", "CRDO", "LITE", "COHR"]
+ai_tier_1_text = "、".join(f"{s} {pct(s)}" for s in ai_tier_1 if s in Q and Q[s].get("day") is not None)
+ai_tier_2_text = "、".join(f"{s} {pct(s)}" for s in ai_tier_2 if s in Q and Q[s].get("day") is not None)
+stock_movers = sorted(
+    [(s, float(Q[s]["day"]), Q[s].get("volume_ratio")) for s in STOCKS if s in Q and Q[s].get("day") is not None],
+    key=lambda x: abs(x[1]), reverse=True,
+)[:6]
+stock_mover_text = "；".join(
+    f"{s} {v:+.2f}%（成交约{vr:.2f}x均量）" if vr is not None else f"{s} {v:+.2f}%"
+    for s, v, vr in stock_movers
+) or "未识别出可用的异动个股"
+option_checked_at = OPTIONS.get("checked_at_et", "检查时间不可得")
 
 
 STOCKS = set(Q) - {"^DJI", "^GSPC", "^IXIC", "^RUT", "^VIX", "^VVIX", "^SKEW", "^TNX", "DX-Y.NYB", "CL=F", "BZ=F", "GC=F", "HG=F", "BTC-USD"}
@@ -179,9 +225,9 @@ for name, size in [("Title", 21), ("Heading 1", 15), ("Heading 2", 11.5)]:
     s.font.color.rgb = RGBColor(0, 0, 0)
     s.element.rPr.rFonts.set(qn("w:eastAsia"), "Microsoft YaHei")
 
-doc.add_heading("美股每日复盘 | 2026-10-12 美东收盘", level=0)
-para("报告日期：2026-10-13（北京时间）｜覆盖交易日：2026-10-12（美国现金盘）｜数据截点：收盘及可获得的盘后公开链数据。", small=True)
-para("结论先行：这是一个“指数近乎横盘、内部轮动明显”的交易日。道指 +0.38%，标普500 -0.06%，纳指 -0.44%，Russell 2000 -0.45%；但标普成分股上涨 321 家、下跌 179 家，涨跌比约 1.79。资金从高估值 AI 硬件与高 Beta 方向撤出，转向能源、必选消费、医疗、通信服务和部分防御资产。", highlight=True)
+doc.add_heading(f"美股每日复盘 | {US_TRADE_DATE} 美东收盘", level=0)
+para(f"报告日期：{REPORT_BJT}（北京时间）｜覆盖交易日：{US_TRADE_DATE}（美国现金盘）｜数据截点：收盘及可获得的盘后公开链数据。", small=True)
+para(f"结论先行：指数表现为道指 {pct('^DJI')}、标普500 {pct('^GSPC')}、纳指 {pct('^IXIC')}、Russell 2000 {pct('^RUT')}；S&P 500 广度为上涨 {B.get('advancers', '不可得')}、下跌 {B.get('decliners', '不可得')}，涨跌比 {B.get('ad_ratio', float('nan')):.2f}。板块当日相对强弱由 {sector_leaders} 领跑，{sector_laggards} 落后；这是当天价格与广度观察，不把固定公司名单预设为催化。", highlight=True)
 
 heading("1. Executive Tape Snapshot")
 table(["资产/指标", "收盘/状态", "当日", "5D", "读法"], [
@@ -193,16 +239,16 @@ table(["资产/指标", "收盘/状态", "当日", "5D", "读法"], [
     ["DXY / WTI / BTC", f"{val('DX-Y.NYB')} / {val('CL=F')} / {val('BTC-USD')}", "美元/油涨，BTC跌", "—", "宏观流动性与风险偏好分化"],
 ], widths=[1.35, 1.35, .9, .9, 2.0])
 chart("sector_bar.png", "板块当日表现与成交相对强度", "Yahoo Finance Chart API；日收益率，成交相对30日均量。", width=5.85)
-para("图表读法：当日最强为能源（XLE +1.43%）、必选消费（XLP +1.17%）、通信服务（XLC +0.97%）；科技（XLK -1.22%）与半导体代理（SOXX -2.60%）明显落后。结合上涨家数占比 63.8%，可判定为“风险偏好没有全面崩坏，但高拥挤成长资产被主动降仓”。")
+para(f"图表读法：当日相对最强为 {sector_leaders}，相对最弱为 {sector_laggards}；上涨占比 {B.get('up_pct', float('nan')):.1f}%。需要把 ETF 表现和单股异常分开读，不能用行业平均替代个股催化。")
 
 heading("2. Rotation & Leadership Dashboard")
 chart("rotation_sector_heatmap.png", "Sector Rotation Map（行业指数）", "本地 rotation_engine；1D/5D/20D，单位为百分比；括号内为行业名称。")
-para("资金方向判断：短线流入能源、必选消费、医疗保健、房地产和通信服务，流出科技、材料与可选消费；20日维度则仍保留半导体、软件/网络和 AI 相关资产的历史强势，因此今天更像高位主题内部的去杠杆，而不是趋势彻底反转。科技板块内部不能只看 XLK：SOXX/SMH、CIBR、SKYY 和 XBI 进一步走弱，而 IHI、XHE 体现医疗器械相对韧性。")
+para(f"资金方向判断：价格代理显示相对偏好集中在 {sector_leaders}，相对压力集中在 {sector_laggards}；20日维度需要结合热图判断是否只是短期反转。没有直接 ETF/PB 净流数据时，报告使用“价格偏好/轮动代理”，不把相对涨跌写成已证实的净流入或净流出。")
 chart("rotation_subsector_heatmap.png", "Subsector Rotation Map（细分行业）", "本地 rotation_engine；加入 XBI、IHI、XHE、CIBR、SKYY、XME、COPX、GDX、KRE、XRT、XHB、ITA 等行业/主题代理。")
-para("异常个股必须回填在行业图旁：光通信链条 LITE -9.78%、CIEN -9.95%、COHR -7.87%、AAOI -8.17%、CRDO -7.25%，明显弱于通信服务 ETF，说明行业指数掩盖了硬件子组的集中抛压；FICO +10.85%、FIGS +12.42%、MDT +3.90%则是单股驱动，不能被简单归入“金融、可选消费或医疗整体上涨”。")
+para(f"异常个股必须回填在行业图旁：本次扫描得到 {exception_text}。这些是价格/成交异常候选，若当天没有新公告、研报、公司交流或可验证传闻，只能标为结构性重定价或待验，不能把行业 ETF 变化直接当成单股原因。")
 chart("rotation_semi_software.png", "Semi vs Software：横截面当日收益", "本地 rotation_engine；各自12只代表性成分，等权。")
 chart("rotation_semi_software_spread.png", "Semi - Software Daily Spread", "定义：Semi - Software > 0 表示半导体跑赢软件；< 0 表示软件跑赢半导体。")
-para("图表解读：半导体等权当日约 -2.07%，软件约 -1.48%，价差约 -1.37 个百分点，意味着软件相对抗跌；但过去 20 日半导体仍明显占优，故今天更接近短期估值/仓位再平衡。不能把“半导体下跌”泛化为整个科技板块都弱，META +3.38%就是大型平台股的反例。")
+para(f"图表解读：半导体等权当日 {semi_eq:+.2f}%，软件等权 {software_eq:+.2f}%，价差（Semi - Software）{semi_spread:+.2f} 个百分点；正值表示半导体相对跑赢，负值表示软件相对跑赢。两者绝对涨跌、ETF 权重和中位数可能不同，不能只凭价差判断整个科技板块方向。")
 
 heading("3. Rotation Matrix")
 rows = []
@@ -219,18 +265,18 @@ para("因子结论：SPHB 相对 USMV 走弱，小盘相对大盘走弱；在宏
 
 heading("5. Today's Company Expectation Resets")
 table(["公司/主题", "今日证据", "状态", "市场含义"], [
-    ["META / Muse Wonder", "META +3.38%；官方发布 Muse Wonder 与 Muse Wonder Full", "已确认", "平台 AI 产品进展改善大型科技相对强度；尚不能外推为全行业硬件需求"],
-    ["AVGO", "AVGO -1.88%；当日有 CEO 对 AI 预期过高/投资者行为的二手报道", "二手报道", "更像估值与预期重估；不是新财报，不把 9/2 财报重复写成今日催化"],
-    ["光通信硬件", "LITE/CIEN/COHR/AAOI/CRDO 同步大跌，未见单一公司新公告", "板块重定价", "供给、估值、拥挤仓位或产业链预期同时收缩；不能硬归因于 FCC"],
-    ["ORCL", "本日未发现新财报或新指引证据", "历史背景", "不纳入今日催化；只在云基础设施相对表现需要时作为背景参照"],
+    ["META", f"当日价格 {pct('META')}；固定名单不自动升级为事件", "价格/结构", "只有找到同日产品、管理层或研究增量，才升级为事件催化"],
+    ["AVGO", f"当日价格 {pct('AVGO')}；本报告不重复历史财报", "价格/结构", "结合半导体等权、成交和期权结构判断，不把旧财报写成今日原因"],
+    ["光通信硬件", f"LITE/CIEN/COHR/AAOI/CRDO：{exception_text}", "异常候选", "若没有同日证据，暂归行业/估值/仓位重定价，FCC 不是默认解释"],
+    ["ORCL", f"当日价格 {pct('ORCL')}；未由固定名单自动触发新事件", "价格/结构", "只在出现同日公告、研报、交流或指引变化时升级为公司催化"],
 ], widths=[1.45, 2.05, 1.0, 2.0])
 para("事件闸门：只有当当天有新公告、正式报告、公司交流、明确指引或可验证的市场结构证据，才升级为个股催化。旧财报只作为估值和预期背景，不重复追踪。")
 
 heading("6. Technology Sector Scan")
 chart("ai_ladder.png", "AI Chain Ladder：Tier 1 / Tier 2 / Tier 3", "本地行情数据；Tier 1 为现金流巨头，Tier 2 为网络/存储/互联，Tier 3 为电力/数据中心基础设施。")
-para("AI 链条分层：Tier 1 中 META 逆势上涨，NVDA -1.29%、AVGO -1.88%，表现分化；Tier 2 的 MU -3.88%、SNDK -5.97%、MRVL -3.42%、CRDO -7.25%、LITE -9.78%、COHR -7.87%显著承压；Tier 3 也不是同质，VRT/CEG/NRG 受能源与电力叙事影响相对独立。今天不是“AI 全线崩”，而是资金把最依赖持续加速订单、估值和资本开支预期的二阶硬件资产先降仓。")
+para(f"AI 链条分层：Tier 1 现金流/平台代表为 {ai_tier_1_text or '不可得'}；Tier 2 网络、存储和光互联代表为 {ai_tier_2_text or '不可得'}。这组数据只能说明当天价格速度和相对分化，不能单独证明订单、客户或资本开支发生变化；后者需要公司公告、会议或可复核产业数据。")
 chart("movers.png", "科技与主题异动个股", "Yahoo Finance Chart API；按当日绝对收益及成交相对30日均量筛选。")
-para("异动原因必须逐个核验：FICO +10.85%伴随约 2.16 倍成交，属于强催化/预期重估候选，但本次公开数据未给出足够单一事件证据，标注为“待验”；FIGS +12.42%伴随约 3.83 倍成交，需核查业绩、产品或卖方报告；MDT +3.90%相对医疗器械 ETF走强，属于行业内部 Alpha。反面是光通信簇跌幅接近 -8%至 -10%，而非通信服务 ETF同步大跌，说明个股/子行业因素占主导。")
+para(f"异动原因必须逐个核验：按绝对涨跌筛出的候选为 {stock_mover_text}。这些名字先记录为价格/成交异常，随后核对同日公告、研报、公司交流、行业数据或传闻原始出处；没有证据时保留“待验”，不把涨跌倒推成原因。")
 
 heading("7. Non-Tech Sector Scan")
 table(["方向", "代理/行业", "1D", "判断"], [
@@ -254,7 +300,7 @@ table(["标的", "当日", "成交/状态", "当前可验证解释"], [
 para("Kill reason 的写法：先写价格和成交，再写可验证事件，最后写结构性解释与待验项。没有新公告时，不把旧财报、传闻或行业图表强行包装成“今日公司事件”。")
 
 heading("9. Where Capital Focused")
-para("资金主线不是单一板块，而是三条并行路径：第一，能源与必选消费承接宏观不确定性；第二，通信服务由 META 和运营商支撑，表现为平台/现金流而非纯成长扩张；第三，科技内部从 Tier 2 高弹性硬件向 Tier 1 平台与防御性资产收缩。广度为正且 RSP 跑赢 SPY，说明有真实参与，但 QQQ 跑输 RSP、High Beta 跑输 Low Vol，说明增量资金更挑剔。")
+para(f"资金主线判断基于价格偏好代理：板块前列为 {sector_leaders}，后列为 {sector_laggards}；S&P 广度上涨占比 {B.get('up_pct', float('nan')):.1f}%，RSP {pct('RSP')} 对比 SPY {pct('SPY')}。这能支持参与度和相对偏好的判断，但没有直接基金流、PB 或 CTA 数据时，不写成确认的净流入/净流出。")
 
 heading("10. Index Inclusion & Option Risk")
 watch_items = WATCH.get("reminders", [])
@@ -269,8 +315,9 @@ for x in OPTIONS.get("results", []):
         label = ", ".join(alerts) if alerts else "无阈值报警"
         opt_rows.append([x["ticker"], x.get("expiry_near", "不可得"), f"{x.get('call_put_volume_ratio', float('nan')):.2f}", f"{x.get('max_strike_volume_share', float('nan')):.1%}", label])
 table(["标的", "近月到期", "Call/Put成交量", "最大执行价成交占比", "提示"], opt_rows, widths=[.75, 1.15, 1.25, 1.4, 2.0])
-chart("options_alerts.png", "公开期权链异常扫描", "Nasdaq public option-chain endpoint；检查时点 2026-10-12 19:41 ET；无执行方向确认。")
-para("解读规则：CIEN 的远月执行价集中度约 46.98%、AAOI 约 21.18%、TWST 约 28.97%、MRVL 约 22.40%，说明成交/未平仓结构可能围绕少数执行价聚集，常见含义包括事件对冲、做市商库存管理、价位 pinning 或投机性集中下注；它不等于“看涨/看跌”。MU 同时触发 Call Volume/OI 与 Put Volume/OI 阈值，说明期权活跃度异常，但公开链没有买卖方向、开平仓、扫单/大宗标签，不能把它写成净买入或净卖出。")
+chart("options_alerts.png", "公开期权链异常扫描", f"Nasdaq public option-chain endpoint；检查时点 {option_checked_at}；无执行方向确认。")
+option_alert_names = [x["ticker"] for x in OPTIONS.get("results", []) if x.get("option_alerts") and any(a != "no_threshold_alert" for a in x.get("option_alerts", []))]
+para(f"解读规则：本次触发异常阈值的标的为 {', '.join(option_alert_names) if option_alert_names else '无'}。执行价集中度只能说明成交/未平仓结构围绕少数执行价聚集，可能对应事件对冲、做市商库存管理、价位 pinning 或投机性集中下注；在没有执行侧、开平仓、扫单/大宗标签时，不等于看涨、看跌、净买入或净卖出。")
 para("期权数据限制：本次优先抓取 Nasdaq 公共链，StockWe 每笔成交方向未形成可验证数据；缺少执行侧、开平仓、IV历史与 GEX，故不编造“机构买 Call/买 Put”结论。")
 
 heading("11. Derivatives, Gamma & Flows")
@@ -297,7 +344,7 @@ para("映射只做产业链方向，不把美股单日跌幅机械外推到 A/H 
 heading("14. Data Appendix")
 chart("breadth.png", "Appendix: breadth data", "同上；503只S&P 500成分。")
 chart("factor_proxy.png", "Appendix: factor proxies", "同上；ETF代理，不等同于可交易因子组合收益。")
-para("数据完整性：Yahoo Finance Chart API 取得收盘与历史收益；S&P 500 成分广度抓取成功 503/503；期权链抓取成功但为公开链快照；盘中 5分钟数据接口返回空序列，MOC/尾盘20分钟不可得；PB、CTA、真实 GEX、执行方向均不可得。所有不可得项均保留为“不可得”，没有用估计值替代。")
+para("数据完整性：核心日线若缺少目标日收盘，则由 Yahoo Chart API 的目标交易日 5分钟常规现金盘聚合重建，并在运行日志保留该口径；S&P 500 成分广度与行业代理均经过目标日校验。期权链为公开快照，PB、CTA、真实 GEX、执行方向仍不可得；所有不可得项均保留为“不可得”，没有用估计值替代。")
 
 heading("15. Sources")
 link("AP market recap（指数、板块与个股收盘摘要）", "https://apnews.com/article/f07713e8b2e438ac5903b50f5ce97235")
