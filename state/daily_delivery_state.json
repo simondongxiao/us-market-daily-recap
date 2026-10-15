@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "deliveries": [
+    {
+      "status": "sent",
+      "report_date_bjt": "2026-10-16",
+      "us_trade_date": "2026-10-15",
+      "content_version": "61e5ce02911c80720c4ca74badc868642a34a33d1ad0d62164ff2e3439a601e8:3325d8ecd6cc11f4d1d999b25a593c4271c338a5e1a4aea03f74ba24032e82b5",
+      "html_url": "https://simondongxiao.github.io/us-market-daily-recap/reports/us_market_recap_2026-10-16_BJT_us_2026-10-15_final.html",
+      "word_url": "https://github.com/simondongxiao/us-market-daily-recap/blob/main/reports/us_market_recap_2026-10-16_BJT_us_2026-10-15_final.docx",
+      "run_url": "",
+      "sent_at_utc": "2026-10-15T23:41:14.404979+00:00"
+    }
+  ],
+  "updated_at_utc": "2026-10-15T23:41:14.404979+00:00"
+}
