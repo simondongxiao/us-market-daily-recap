@@ -2,7 +2,41 @@
 
 原生 GitHub schedule 保留为兜底，当前仍是 `0 23 * * *`，对应北京时间 07:00。Scheduled #7 的唯一历史样本在整点触发后延迟了 141.7 分钟，但 Runner 排队只有 3 秒；这只能证明 GitHub 调度存在延迟，不能证明改成非整点就一定准时。因此本项目不把 `23:07` 之类的调整当成时间保证。
 
-推荐在一个可以发送 HTTPS 请求的低维护 cron 服务中设置每天北京时间 07:03 的 POST，请求 GitHub Actions API：
+## 推荐配置：cron-job.org
+
+cron-job.org 支持固定时区、POST、自定义请求头、失败通知和执行历史。仓库已提供幂等配置脚本 `scripts/setup_cron_job_org.py`：同一标题的任务存在时只更新，不会重复创建。
+
+1. 在 cron-job.org 注册并在 `Settings` 生成 API key。
+2. 在 GitHub 创建一个仅限本仓库的 fine-grained PAT，权限只给 `Actions: Read and write`。该 PAT 只用于触发 `workflow_dispatch`，不要使用仓库内容写权限。
+3. 在本地 PowerShell 当前进程设置两个环境变量，然后运行配置脚本：
+
+```powershell
+$env:CRON_JOB_ORG_API_KEY = '<cron-job.org API key>'
+$env:GITHUB_DISPATCH_PAT = '<GitHub fine-grained PAT>'
+python scripts/setup_cron_job_org.py
+```
+
+脚本配置的任务是 `Asia/Shanghai` 每天 `07:03`，请求超时 60 秒，并启用 cron-job.org 的失败/恢复通知。检查任务而不修改：
+
+```powershell
+python scripts/setup_cron_job_org.py --check
+```
+
+停用而不删除：
+
+```powershell
+python scripts/setup_cron_job_org.py --disable
+```
+
+预览请求且不访问外部 API：
+
+```powershell
+python scripts/setup_cron_job_org.py --dry-run
+```
+
+脚本不会把两个凭据写入仓库；配置后 GitHub PAT 会作为 cron-job.org 对 GitHub API 发请求的 `Authorization` 请求头保存。不要把 PAT 或 cron-job.org API key 提交到 GitHub。
+
+脚本实际设置的 POST 请求如下：
 
 ```http
 POST https://api.github.com/repos/simondongxiao/us-market-daily-recap/actions/workflows/us-market-daily-recap.yml/dispatches
@@ -14,6 +48,8 @@ Content-Type: application/json
 ```
 
 PAT 只需要对该仓库授予 Actions workflow dispatch 所需的最小写权限。不要把 PAT 写入仓库，也不要把飞书 Webhook 写进 URL；两者都应只保存在外部调度器的 Secret 中。当前仓库的 `FEISHU_WEBHOOK_URL` Secret 已存在，不需要重复配置。
+
+GitHub 的 `workflow_dispatch` API 返回成功只代表工作流已被接收；最终报告仍由现有 Windows-hosted runner 生成，成功交付以后才写入状态并由去重逻辑抑制重复发送。
 
 自动去重由 `state/daily_delivery_state.json` 和固定的 Actions concurrency group 共同完成，键包含：
 
