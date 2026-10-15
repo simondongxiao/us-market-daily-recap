@@ -261,6 +261,7 @@ try {
     }
 
     $notificationStatus = if ($stateCheck.has_success_for_report_date) { 'revision' } else { 'generated' }
+    if ($consistency.warnings.Count -gt 0) { $notificationStatus = "${notificationStatus}_data_warning" }
     $currentStage = 'github_upload'
     $publisher = Join-Path $PSScriptRoot 'publish_report_to_github.py'
     if (-not (Test-Path -LiteralPath $publisher -PathType Leaf)) { throw "Publisher is missing: $publisher" }
