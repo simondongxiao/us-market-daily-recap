@@ -19,10 +19,12 @@ concurrency:
 
 permissions:
   contents: write
+  pages: write
 
 jobs:
   generate-and-notify:
     runs-on: windows-latest
+    timeout-minutes: 20
     env:
       CODEX_TASK_DIR: '${{ github.workspace }}'
       RECAP_OUTPUT_ROOT: '${{ github.workspace }}\outputs'
@@ -43,6 +45,19 @@ jobs:
         shell: powershell
         run: python -m pip install --disable-pip-version-check pandas numpy matplotlib requests python-docx
 
+      - name: Log scheduler context
+        shell: powershell
+        run: |
+          $utc = [DateTime]::UtcNow
+          $zone = [TimeZoneInfo]::FindSystemTimeZoneById('China Standard Time')
+          $bjt = [TimeZoneInfo]::ConvertTimeFromUtc($utc, $zone)
+          Write-Host "event=${{ github.event_name }}"
+          Write-Host "run_id=${{ github.run_id }} run_number=${{ github.run_number }}"
+          Write-Host "head_sha=${{ github.sha }}"
+          Write-Host "runner_started_utc=$($utc.ToString('o'))"
+          Write-Host "runner_started_bjt=$($bjt.ToString('o'))"
+          Write-Host "schedule_expression=0 23 * * * (07:00 BJT target)"
+
       - name: Run local skill-compatible recap pipeline and notify Feishu
         id: run-recap
         shell: powershell
@@ -62,4 +77,15 @@ jobs:
           name: ${{ steps.run-recap.outputs.report_name }}
           path: ${{ steps.run-recap.outputs.report_path }}
           if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload recap audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recap-audit-${{ github.run_id }}
+          path: |
+            ${{ github.workspace }}\outputs\latest_daily_recap.json
+            ${{ github.workspace }}\outputs\**\generation_manifest.json
+          if-no-files-found: warn
           retention-days: 14

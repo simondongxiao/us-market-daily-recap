@@ -4,8 +4,13 @@ import argparse
 import base64
 import json
 import os
+import re
 import subprocess
 import tempfile
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
 
@@ -19,8 +24,9 @@ def gh(args: list[str], *, input_path: Path | None = None) -> str:
 
 def upload_file(local_file: Path, endpoint: str, branch: str, message: str) -> dict:
     sha = ""
+    lookup_endpoint = f"{endpoint}?ref={urllib.parse.quote(branch, safe='')}"
     existing = subprocess.run(
-        ["gh", "api", endpoint, "-X", "GET", "-f", f"ref={branch}", "--jq", ".sha"],
+        ["gh", "api", lookup_endpoint, "--jq", ".sha"],
         capture_output=True,
         text=True,
     )
@@ -41,6 +47,59 @@ def upload_file(local_file: Path, endpoint: str, branch: str, message: str) -> d
     finally:
         payload_path.unlink(missing_ok=True)
     return json.loads(response)
+
+
+def request_json(args: list[str]) -> dict | list:
+    return json.loads(gh(args))
+
+
+def trigger_pages_build(repo: str) -> dict:
+    """Explicitly request a legacy Pages rebuild after the HTML commit."""
+    return request_json([f"repos/{repo}/pages/builds", "-X", "POST"])
+
+
+def wait_for_pages(
+    repo: str,
+    html_url: str,
+    expected_date: str,
+    expected_commit: str,
+    timeout_seconds: int = 180,
+) -> dict:
+    """Wait for Pages and verify the public HTML is the current report."""
+    started = time.monotonic()
+    last_build: dict = {}
+    last_error = ""
+    while time.monotonic() - started <= timeout_seconds:
+        try:
+            last_build = request_json([f"repos/{repo}/pages/builds/latest"])
+        except subprocess.CalledProcessError as exc:
+            last_error = exc.stderr or str(exc)
+        status = str(last_build.get("status", "")).lower() if isinstance(last_build, dict) else ""
+        if status == "errored":
+            last_error = str(last_build)
+        elif status == "built" and (not expected_commit or last_build.get("commit") == expected_commit):
+            parsed = urllib.parse.urlparse(html_url)
+            if parsed.scheme != "https" or not parsed.netloc:
+                raise RuntimeError(f"Invalid Pages URL: {html_url}")
+            probe = f"{html_url}?codex_verify={int(time.time())}"
+            request = urllib.request.Request(probe, headers={"Cache-Control": "no-cache"})
+            try:
+                with urllib.request.urlopen(request, timeout=30) as response:
+                    content_type = response.headers.get("Content-Type", "")
+                    body = response.read().decode("utf-8", errors="replace")
+                if response.status == 200 and "text/html" in content_type.lower() and expected_date in body and len(body) > 1000:
+                    return {
+                        "verified": True,
+                        "build": last_build,
+                        "http_status": response.status,
+                        "content_type": content_type,
+                        "content_length": len(body),
+                    }
+                last_error = f"Pages returned status={response.status}, type={content_type}, length={len(body)}"
+            except (urllib.error.HTTPError, urllib.error.URLError) as exc:
+                last_error = str(exc)
+        time.sleep(5)
+    raise RuntimeError(f"Pages did not publish {html_url} within {timeout_seconds}s; last_build={last_build}; last_error={last_error}")
 
 
 def main() -> int:
@@ -70,7 +129,24 @@ def main() -> int:
         # GitHub Pages is enabled for the public delivery repository, so this
         # is the browser-rendered URL rather than the source/blob URL.
         html_url = f"https://{owner}.github.io/{repo_name}/reports/{html_report.name}"
-    print(json.dumps({"repo": args.repo, "path": path, "html_url": html_url, "word_url": word_url}, ensure_ascii=False))
+    pages = None
+    if html_report.is_file():
+        trigger_pages_build(args.repo)
+        match = re.search(r"us_market_recap_(\d{4}-\d{2}-\d{2})_BJT", report.name)
+        if not match:
+            raise RuntimeError(f"Could not parse report date from {report.name}")
+        expected_date = match.group(1)
+        expected_commit = (html_result or {}).get("commit", {}).get("sha", "")
+        pages = wait_for_pages(args.repo, html_url, expected_date, expected_commit)
+    print(json.dumps({
+        "repo": args.repo,
+        "path": path,
+        "html_url": html_url,
+        "word_url": word_url,
+        "pages_verified": bool(pages and pages.get("verified")),
+        "pages": pages,
+        "html_commit": (html_result or {}).get("commit", {}).get("sha", ""),
+    }, ensure_ascii=False))
     return 0
 
 
