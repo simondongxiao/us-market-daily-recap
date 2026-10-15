@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import getpass
 import json
 import os
 import sys
@@ -133,6 +134,7 @@ def main() -> int:
     parser.add_argument("--check", action="store_true", help="list the matching job without changing it")
     parser.add_argument("--disable", action="store_true", help="disable the matching job instead of enabling it")
     parser.add_argument("--dry-run", action="store_true", help="print the redacted request without calling the API")
+    parser.add_argument("--interactive", action="store_true", help="read missing secrets without echoing them")
     args = parser.parse_args()
 
     api_key = os.environ.get("CRON_JOB_ORG_API_KEY", "")
@@ -140,6 +142,10 @@ def main() -> int:
     if args.dry_run:
         print(json.dumps(redact(job_config(args.repo, args.title, github_pat or "missing", not args.disable)), ensure_ascii=False, indent=2))
         return 0
+    if args.interactive and not api_key:
+        api_key = getpass.getpass("cron-job.org API key: ").strip()
+    if args.interactive and not github_pat and not args.check:
+        github_pat = getpass.getpass("GitHub fine-grained PAT: ").strip()
     if not api_key:
         return fail("CRON_JOB_ORG_API_KEY is not set")
     if not args.check and not github_pat:

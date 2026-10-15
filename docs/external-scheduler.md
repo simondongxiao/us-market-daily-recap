@@ -16,6 +16,12 @@ $env:GITHUB_DISPATCH_PAT = '<GitHub fine-grained PAT>'
 python scripts/setup_cron_job_org.py
 ```
 
+也可以让脚本隐藏读取两个凭据，不把它们写入环境变量或 PowerShell 历史：
+
+```powershell
+python scripts/setup_cron_job_org.py --interactive
+```
+
 脚本配置的任务是 `Asia/Shanghai` 每天 `07:03`，请求超时 60 秒，并启用 cron-job.org 的失败/恢复通知。检查任务而不修改：
 
 ```powershell
