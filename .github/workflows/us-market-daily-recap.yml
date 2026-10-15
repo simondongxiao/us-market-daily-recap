@@ -20,6 +20,7 @@ concurrency:
 permissions:
   contents: write
   pages: write
+  actions: read
 
 jobs:
   generate-and-notify:
@@ -89,3 +90,40 @@ jobs:
             ${{ github.workspace }}\outputs\**\generation_manifest.json
           if-no-files-found: warn
           retention-days: 14
+
+  failure-alert:
+    needs: generate-and-notify
+    if: ${{ failure() && needs.generate-and-notify.result == 'failure' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+    steps:
+      - name: Checkout alert script
+        uses: actions/checkout@v4
+
+      - name: Download failure audit
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: recap-audit-${{ github.run_id }}
+          path: failure-audit
+
+      - name: Send failure alert to Feishu
+        shell: bash
+        run: |
+          audit="failure-audit/latest_daily_recap.json"
+          if [ -f "$audit" ]; then
+            phase="$(jq -r '.failure_phase // "unknown"' "$audit")"
+            reason="$(jq -r '.error // "main workflow failed without an audit reason"' "$audit")"
+            report_date="$(jq -r '.report_date_bjt // "unknown"' "$audit")"
+          else
+            phase="workflow"
+            reason="Main report job failed before its audit artifact was available"
+            report_date="unknown"
+          fi
+          python3 scripts/send_failure_alert.py \
+            --phase "$phase" \
+            --reason "$reason" \
+            --report-date-bjt "$report_date" \
+            --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

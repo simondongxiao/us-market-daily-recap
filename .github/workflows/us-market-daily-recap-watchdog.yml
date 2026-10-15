@@ -1,0 +1,36 @@
+name: US market daily recap watchdog
+
+on:
+  # 23:20 UTC = 07:20 Beijing time. This is a missed-run safety net, not a
+  # second report schedule; delivery_state.py suppresses duplicate work.
+  schedule:
+    - cron: '20 23 * * *'
+  workflow_dispatch:
+    inputs:
+      report_date_bjt:
+        description: 'Beijing report date to check; leave blank for today'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  check-and-compensate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+    steps:
+      - name: Checkout watchdog scripts
+        uses: actions/checkout@v4
+
+      - name: Check delivery and compensate if needed
+        shell: bash
+        run: |
+          date='${{ inputs.report_date_bjt }}'
+          args=(scripts/watchdog_daily_recap.py --repo "${{ github.repository }}")
+          if [ -n "$date" ]; then args+=(--report-date-bjt "$date"); fi
+          python3 "${args[@]}"

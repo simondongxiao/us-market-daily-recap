@@ -1,4 +1,5 @@
 # Local report artifacts and market-data caches stay on the Windows runner.
+outputs/**
 outputs/*.docx
 outputs/*.md
 outputs/*.png

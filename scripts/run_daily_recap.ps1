@@ -113,13 +113,17 @@ $audit = [ordered]@{
         generation = [ordered]@{ status = 'pending' }
         word_validation = [ordered]@{ status = 'pending' }
         html_validation = [ordered]@{ status = 'pending' }
+        consistency_validation = [ordered]@{ status = 'pending' }
+        dedupe_check = [ordered]@{ status = 'pending' }
         github_upload = [ordered]@{ status = 'pending' }
         pages_verification = [ordered]@{ status = 'pending' }
         feishu_notification = [ordered]@{ status = 'pending' }
+        delivery_state = [ordered]@{ status = 'pending' }
     }
 }
 $report = $null
 $publishInfo = $null
+$currentStage = 'initialization'
 
 function Save-Audit {
     $audit.updated_at_bjt = (Resolve-ChinaNow).ToString('o')
@@ -145,12 +149,14 @@ try {
     Write-Output "Output root: $($env:RECAP_OUTPUT_DIR)"
 
     if (-not $SkipGenerate) {
+        $currentStage = 'generation'
         Invoke-ConfiguredGenerator -Command $GeneratorCommand -DateBjt $ReportDateBjt -Root $TaskDir
         Set-AuditStage -Name 'generation' -Status 'success'
     } else {
         Set-AuditStage -Name 'generation' -Status 'skipped'
     }
 
+    $currentStage = 'word_validation'
     $report = Find-FreshReport -DateBjt $ReportDateBjt -StartedUtc $startedUtc -Directories $searchDirectories
     if ($null -eq $report) {
         throw "No fresh Word report found for Beijing date $ReportDateBjt. Refusing to send a stale report to Feishu."
@@ -174,8 +180,13 @@ try {
     if ($report.Length -le 0) { throw "Word report is empty: $($report.FullName)" }
     $audit.report_path = $report.FullName
     $audit.report_name = $report.Name
-    Set-AuditStage -Name 'word_validation' -Status 'success' -Detail "$($report.Length) bytes"
+    if ($report.Name -notmatch "^us_market_recap_${ReportDateBjt}_BJT_us_(?<trade>\d{4}-\d{2}-\d{2})_final\.docx$") {
+        throw "Report filename does not contain a valid US trade date: $($report.Name)"
+    }
+    $usTradeDate = $Matches.trade
+    Set-AuditStage -Name 'word_validation' -Status 'success' -Detail "$($report.Length) bytes; US trade date $usTradeDate"
 
+    $currentStage = 'html_validation'
     $htmlPath = [IO.Path]::ChangeExtension($report.FullName, '.html')
     if (-not (Test-Path -LiteralPath $htmlPath -PathType Leaf)) { throw "HTML report is missing: $htmlPath" }
     $htmlItem = Get-Item -LiteralPath $htmlPath
@@ -183,15 +194,74 @@ try {
     $audit.html_path = $htmlPath
     Set-AuditStage -Name 'html_validation' -Status 'success' -Detail "$($htmlItem.Length) bytes"
 
-    $runUrl = ''
-    if ($env:GITHUB_SERVER_URL -and $env:GITHUB_REPOSITORY -and $env:GITHUB_RUN_ID) {
-        $runUrl = "$($env:GITHUB_SERVER_URL)/$($env:GITHUB_REPOSITORY)/actions/runs/$($env:GITHUB_RUN_ID)"
-    }
     $python = if (Test-Path -LiteralPath 'D:\python\python.exe' -PathType Leaf) {
         'D:\python\python.exe'
     } else {
         (Get-Command python.exe -ErrorAction Stop).Source
     }
+    $validator = Join-Path $PSScriptRoot 'validate_recap_consistency.py'
+    if (-not (Test-Path -LiteralPath $validator -PathType Leaf)) { throw "Consistency validator is missing: $validator" }
+    $dataRoot = @(
+        (Join-Path $sourceOutput $ReportDateBjt),
+        (Join-Path (Split-Path -Parent $report.FullName) $ReportDateBjt),
+        (Join-Path $TaskDir "outputs\$ReportDateBjt")
+    ) | Where-Object { Test-Path -LiteralPath (Join-Path $_ 'source_audit.json') -PathType Leaf } | Select-Object -First 1
+    $previousHtml = Get-ChildItem -Path @((Join-Path $TaskDir 'reports'), $taskOutput, $sourceOutput) -Filter 'us_market_recap_*_final.html' -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -ne $htmlPath -and $_.Name -notmatch "_${ReportDateBjt}_BJT_" } |
+        Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+    $currentStage = 'consistency_validation'
+    $validationArgs = @('-u', $validator, '--report', $report.FullName, '--html', $htmlPath, '--report-date-bjt', $ReportDateBjt, '--us-trade-date', $usTradeDate)
+    if ($dataRoot) { $validationArgs += @('--source-root', $dataRoot) }
+    if ($previousHtml) { $validationArgs += @('--previous-html', $previousHtml.FullName) }
+    $validationLines = @(& $python @validationArgs)
+    if ($LASTEXITCODE -ne 0) { throw "Report consistency validation failed: $($validationLines | Select-Object -Last 1)" }
+    $consistency = (($validationLines | Select-Object -Last 1) | ConvertFrom-Json)
+    $audit.consistency = $consistency
+    $consistencyDetail = 'ok'
+    if ($consistency.warnings.Count -gt 0) { $consistencyDetail = "data_quality_warning; $($consistency.warnings -join '; ')" }
+    Set-AuditStage -Name 'consistency_validation' -Status 'success' -Detail $consistencyDetail
+
+    $wordHash = (Get-FileHash -LiteralPath $report.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+    $htmlHash = (Get-FileHash -LiteralPath $htmlPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $contentVersion = "$($wordHash):$($htmlHash)"
+    $audit.content_version = $contentVersion
+    $stateScript = Join-Path $PSScriptRoot 'delivery_state.py'
+    if (-not (Test-Path -LiteralPath $stateScript -PathType Leaf)) { throw "Delivery state script is missing: $stateScript" }
+    $currentStage = 'dedupe_check'
+        $stateCheckLines = @(& $python -u $stateScript check --report-date-bjt $ReportDateBjt --us-trade-date $usTradeDate --content-version $contentVersion)
+    if ($LASTEXITCODE -ne 0) {
+        $audit.dedupe_warning = ($stateCheckLines -join ' ')
+        Set-AuditStage -Name 'dedupe_check' -Status 'unavailable' -Detail 'state lookup failed; continuing with delivery and recording the condition'
+        $stateCheck = [pscustomobject]@{ duplicate = $false; has_success_for_report_date = $false }
+    } else {
+        $stateCheck = (($stateCheckLines | Select-Object -Last 1) | ConvertFrom-Json)
+        $audit.dedupe = $stateCheck
+        $dedupeDetail = 'new or revised content'
+        if ($stateCheck.duplicate) { $dedupeDetail = 'duplicate delivery suppressed' }
+        Set-AuditStage -Name 'dedupe_check' -Status 'success' -Detail $dedupeDetail
+    }
+    $runUrl = ''
+    if ($env:GITHUB_SERVER_URL -and $env:GITHUB_REPOSITORY -and $env:GITHUB_RUN_ID) {
+        $runUrl = "$($env:GITHUB_SERVER_URL)/$($env:GITHUB_REPOSITORY)/actions/runs/$($env:GITHUB_RUN_ID)"
+    }
+    if ($stateCheck.duplicate) {
+        $matched = $stateCheck.matched
+        $audit.status = 'deduplicated'
+        $audit.html_url = $matched.html_url
+        $audit.word_url = $matched.word_url
+        $audit.run_url = $runUrl
+        $audit.deduplicated_from = $matched.run_url
+        Set-AuditStage -Name 'github_upload' -Status 'skipped' -Detail 'same report content already sent'
+        Set-AuditStage -Name 'pages_verification' -Status 'skipped' -Detail 'same report content already verified'
+        Set-AuditStage -Name 'feishu_notification' -Status 'skipped' -Detail 'same report content already sent'
+        Set-AuditStage -Name 'delivery_state' -Status 'success' -Detail 'existing sent state reused'
+        Save-Audit
+        Write-Output ($audit | ConvertTo-Json -Depth 8 -Compress)
+        exit 0
+    }
+
+    $notificationStatus = if ($stateCheck.has_success_for_report_date) { 'revision' } else { 'generated' }
+    $currentStage = 'github_upload'
     $publisher = Join-Path $PSScriptRoot 'publish_report_to_github.py'
     if (-not (Test-Path -LiteralPath $publisher -PathType Leaf)) { throw "Publisher is missing: $publisher" }
     $publishArgs = @('-u', $publisher, '--report', $report.FullName)
@@ -200,6 +270,7 @@ try {
     $publishInfo = (($publishLines | Select-Object -Last 1) | ConvertFrom-Json)
     if (-not $publishInfo.html_url -or -not $publishInfo.word_url) { throw 'Publisher returned incomplete public URLs.' }
     Set-AuditStage -Name 'github_upload' -Status 'success' -Detail "$($publishInfo.word_url)"
+    $currentStage = 'pages_verification'
     if (-not $publishInfo.pages_verified) { throw 'Publisher did not verify the public Pages URL.' }
     $audit.html_url = $publishInfo.html_url
     $audit.word_url = $publishInfo.word_url
@@ -209,11 +280,30 @@ try {
 
     $sender = Join-Path $PSScriptRoot 'send_feishu_webhook.py'
     if (-not (Test-Path -LiteralPath $sender -PathType Leaf)) { throw "Feishu sender is missing: $sender" }
-    $senderArgs = @('-u', $sender, '--report', $report.FullName, '--status', 'generated', '--github-url', $publishInfo.html_url, '--word-url', $publishInfo.word_url)
+    $senderArgs = @('-u', $sender, '--report', $report.FullName, '--status', $notificationStatus, '--github-url', $publishInfo.html_url, '--word-url', $publishInfo.word_url)
     if ($runUrl) { $senderArgs += @('--run-url', $runUrl) }
+    $currentStage = 'feishu_notification'
     & $python @senderArgs
-    if ($LASTEXITCODE -ne 0) { throw "Feishu notification failed with exit code $LASTEXITCODE." }
+    $feishuExit = $LASTEXITCODE
+    if ($feishuExit -eq 2) {
+        $audit.delivery_status = 'UNKNOWN_DELIVERY'
+        Set-AuditStage -Name 'feishu_notification' -Status 'unknown_delivery' -Detail 'network/response ambiguity; retry is allowed'
+        throw 'Feishu notification returned UNKNOWN_DELIVERY.'
+    }
+    if ($feishuExit -ne 0) { throw "Feishu notification failed with exit code $feishuExit." }
     Set-AuditStage -Name 'feishu_notification' -Status 'success'
+
+    $currentStage = 'delivery_state'
+    $recordArgs = @('-u', $stateScript, 'record', '--report-date-bjt', $ReportDateBjt, '--us-trade-date', $usTradeDate, '--content-version', $contentVersion, '--html-url', $publishInfo.html_url, '--word-url', $publishInfo.word_url, '--status', 'sent')
+    if ($runUrl) { $recordArgs += @('--run-url', $runUrl) }
+    $recorded = $false
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
+        & $python @recordArgs | Out-Null
+        if ($LASTEXITCODE -eq 0) { $recorded = $true; break }
+        Start-Sleep -Seconds ([math]::Min(8, 2 * $attempt))
+    }
+    if (-not $recorded) { throw 'Delivery was sent but persistent sent-state recording failed.' }
+    Set-AuditStage -Name 'delivery_state' -Status 'success' -Detail 'sent state persisted to GitHub'
 
     $audit.status = 'success'
     $audit.report_date_bjt = $ReportDateBjt
@@ -224,6 +314,10 @@ try {
 } catch {
     $audit.status = 'failed'
     $audit.error = $_.Exception.Message
+    $audit.failure_phase = $currentStage
+    if ($audit.stages.Contains($currentStage) -and $audit.stages[$currentStage].status -eq 'pending') {
+        $audit.stages[$currentStage] = [ordered]@{ status = 'failed'; at_bjt = (Resolve-ChinaNow).ToString('o'); detail = $audit.error }
+    }
     if ($report) { $audit.report_path = $report.FullName; $audit.report_name = $report.Name }
     Save-Audit
     Write-Error "Daily recap pipeline failed: $($_.Exception.Message)"

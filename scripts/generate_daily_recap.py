@@ -25,6 +25,54 @@ def run(args: list[str]) -> None:
     subprocess.run(args, check=True)
 
 
+def now_utc() -> dt.datetime:
+    return dt.datetime.now(dt.timezone.utc)
+
+
+def write_source_audit(root: Path, report: str, us: str, started_at: dt.datetime) -> dict:
+    required = [
+        "quotes.json",
+        "breadth.json",
+        "rotation_engine.json",
+        "options_chain.json",
+        "index_inclusion_watch.json",
+    ]
+    warnings: list[str] = []
+    for name in required:
+        path = root / name
+        if not path.is_file() or path.stat().st_size == 0:
+            warnings.append(f"missing_or_empty:{name}")
+            continue
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            warnings.append(f"invalid_json:{name}:{exc}")
+            continue
+        if isinstance(payload, dict) and payload.get("errors"):
+            warnings.append(f"source_errors:{name}")
+        serialized = json.dumps(payload, ensure_ascii=False).lower()
+        if "source unavailable" in serialized or "不可得" in serialized:
+            warnings.append(f"unavailable_values:{name}")
+    captured = now_utc()
+    audit = {
+        "report_date_bjt": report,
+        "us_trade_date": us,
+        "captured_at_utc": captured.isoformat(),
+        "pipeline_started_at_utc": started_at.isoformat(),
+        "source_window": "公开行情/行业代理/公开期权链；以目标美国交易日为主，缺失项保留不可得",
+        "sources": {
+            "Yahoo Finance Chart API": {"artifacts": ["quotes.json", "breadth.json"]},
+            "local rotation engine": {"artifacts": ["rotation_engine.json"]},
+            "Nasdaq public option-chain endpoint": {"artifacts": ["options_chain.json"]},
+            "index inclusion watchlist": {"artifacts": ["index_inclusion_watch.json"]},
+        },
+        "quality": {"degraded": bool(warnings), "warnings": warnings},
+        "required_artifacts": required,
+    }
+    (root / "source_audit.json").write_text(json.dumps(audit, ensure_ascii=False, indent=2), encoding="utf-8")
+    return audit
+
+
 def latest_us_session(report_date: dt.date) -> dt.date:
     """Resolve the latest completed SPY cash session before the Beijing date."""
     start = dt.datetime.combine(report_date - dt.timedelta(days=15), dt.time(), tzinfo=dt.timezone.utc)
@@ -68,6 +116,7 @@ def main() -> int:
     parser.add_argument("--report-date-bjt", default=os.environ.get("REPORT_DATE_BJT"))
     parser.add_argument("--task-dir", default=os.environ.get("CODEX_TASK_DIR", str(REPO_DIR)))
     args = parser.parse_args()
+    pipeline_started = now_utc()
     report_date = dt.date.fromisoformat(args.report_date_bjt or dt.date.today().isoformat())
     us_date = latest_us_session(report_date)
     report = report_date.isoformat()
@@ -108,6 +157,8 @@ def main() -> int:
     run([str(PYTHON), str(runtime / "make_assets.py")])
     run([str(PYTHON), str(runtime / "build.py")])
 
+    source_audit = write_source_audit(root, report, us, pipeline_started)
+
     if not out_docx.is_file():
         raise RuntimeError(f"Word report was not created: {out_docx}")
     out_html = out_docx.with_suffix('.html')
@@ -123,6 +174,10 @@ def main() -> int:
         "html_name": out_html.name,
         "task_dir": str(Path(args.task_dir).resolve()),
         "generated_by": str(Path(__file__).resolve()),
+        "generated_at_utc": now_utc().isoformat(),
+        "source_audit_path": str(root / "source_audit.json"),
+        "source_captured_at_utc": source_audit["captured_at_utc"],
+        "data_quality": source_audit["quality"],
     }
     (root / "generation_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(manifest, ensure_ascii=False))

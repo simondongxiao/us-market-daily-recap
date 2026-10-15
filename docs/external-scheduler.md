@@ -1,0 +1,27 @@
+# 外部调度触发方案
+
+原生 GitHub schedule 保留为兜底，当前仍是 `0 23 * * *`，对应北京时间 07:00。Scheduled #7 的唯一历史样本在整点触发后延迟了 141.7 分钟，但 Runner 排队只有 3 秒；这只能证明 GitHub 调度存在延迟，不能证明改成非整点就一定准时。因此本项目不把 `23:07` 之类的调整当成时间保证。
+
+推荐在一个可以发送 HTTPS 请求的低维护 cron 服务中设置每天北京时间 07:03 的 POST，请求 GitHub Actions API：
+
+```http
+POST https://api.github.com/repos/simondongxiao/us-market-daily-recap/actions/workflows/us-market-daily-recap.yml/dispatches
+Authorization: Bearer <外部调度器保存的 GitHub fine-grained PAT>
+Accept: application/vnd.github+json
+Content-Type: application/json
+
+{"ref":"main"}
+```
+
+PAT 只需要对该仓库授予 Actions workflow dispatch 所需的最小写权限。不要把 PAT 写入仓库，也不要把飞书 Webhook 写进 URL；两者都应只保存在外部调度器的 Secret 中。当前仓库的 `FEISHU_WEBHOOK_URL` Secret 已存在，不需要重复配置。
+
+自动去重由 `state/daily_delivery_state.json` 和固定的 Actions concurrency group 共同完成，键包含：
+
+- `report_date_bjt`
+- `us_trade_date`
+- Word + HTML SHA-256 内容版本
+- 飞书发送状态
+
+同一版本已成功发送时，手动、Scheduled、外部 dispatch 和 watchdog 都会跳过重复飞书；内容版本变化时允许以 `revision` 补发。飞书结果不明确时记录 `UNKNOWN_DELIVERY`，下一次补偿仍可重试，不会伪装成成功。
+
+仓库内另有 07:20 北京时间运行的 `us-market-daily-recap-watchdog.yml`：若状态中没有当天成功交付，它只请求一次补偿 `workflow_dispatch`。补偿仍走同一套去重和完整 Pages 校验。

@@ -20,6 +20,10 @@ import urllib.request
 from pathlib import Path
 
 
+class UnknownDeliveryError(RuntimeError):
+    """The request outcome cannot be distinguished from successful delivery."""
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--report", required=True, type=Path)
@@ -92,30 +96,39 @@ def send(webhook: str, text: str, attempts: int = 3) -> dict:
         method="POST",
     )
     last_error = ""
+    last_unknown = False
     for attempt in range(1, attempts + 1):
         try:
             with urllib.request.urlopen(request, timeout=30) as response:
                 raw = response.read().decode("utf-8", errors="replace")
         except urllib.error.HTTPError as exc:
             last_error = f"Feishu webhook HTTP {exc.code}"
+            last_unknown = exc.code >= 500
         except urllib.error.URLError as exc:
             last_error = f"Feishu webhook network error: {exc.reason}"
+            last_unknown = True
         else:
             try:
                 result = json.loads(raw)
             except json.JSONDecodeError:
                 last_error = "Feishu webhook returned non-JSON response"
+                last_unknown = True
             else:
                 if "code" not in result:
                     last_error = "Feishu webhook response omitted code; delivery is unverified"
+                    last_unknown = True
                 elif result.get("code") != 0:
                     last_error = f"Feishu webhook rejected message: code={result.get('code')}"
+                    last_unknown = False
                 elif "StatusCode" in result and result.get("StatusCode") != 0:
                     last_error = f"Feishu webhook rejected message: StatusCode={result.get('StatusCode')}"
+                    last_unknown = False
                 else:
                     return result
         if attempt < attempts:
             time.sleep(2 ** attempt)
+    if last_unknown:
+        raise UnknownDeliveryError(last_error)
     raise RuntimeError(last_error)
 
 
@@ -134,6 +147,9 @@ def main() -> int:
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
+    except UnknownDeliveryError as exc:
+        print(f"UNKNOWN_DELIVERY: {exc}", file=sys.stderr)
+        raise SystemExit(2)
     except RuntimeError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         raise SystemExit(1)
