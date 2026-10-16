@@ -14,6 +14,11 @@ from pathlib import Path
 from docx import Document
 
 
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
+
 REQUIRED_HEADINGS = [
     "1. Executive Tape Snapshot",
     "2. Rotation & Leadership Dashboard",
