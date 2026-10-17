@@ -8,11 +8,11 @@ on:
         required: false
         type: string
   schedule:
-    # GitHub's default cron timezone is UTC: 23:03 UTC = 07:03 Beijing time.
-    # This is the GitHub-hosted fallback. A separately configured cron-job.org
-    # dispatcher should call workflow_dispatch at 07:03 BJT; delivery_state.py
-    # makes the two triggers idempotent.
-    - cron: '3 23 * * *'
+    # GitHub's default cron timezone is UTC: 21:03 UTC = 05:03 Beijing time.
+    # This is the GitHub-hosted primary attempt. The 07:03 BJT Codex/external
+    # dispatcher remains a later compensation path; delivery_state.py makes
+    # the triggers idempotent.
+    - cron: '3 21 * * *'
 
 concurrency:
   group: us-market-daily-recap
@@ -81,7 +81,7 @@ jobs:
           Write-Host "head_sha=${{ github.sha }}"
           Write-Host "runner_started_utc=$($utc.ToString('o'))"
           Write-Host "runner_started_bjt=$($bjt.ToString('o'))"
-          Write-Host "schedule_expression=3 23 * * * (07:03 BJT GitHub fallback target)"
+          Write-Host "schedule_expression=3 21 * * * (05:03 BJT GitHub primary target)"
 
       - name: Run local skill-compatible recap pipeline and notify Feishu
         id: run-recap
