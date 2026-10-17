@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
 import json
 import os
 import subprocess
@@ -12,12 +13,26 @@ from pathlib import Path
 
 
 REPO_DIR = Path(__file__).resolve().parents[1]
-SKILL_DIR = Path(os.environ.get("US_MARKET_SKILL_DIR", r"D:\codex\skills\us-market-daily-recap"))
+SKILL_DIR = Path(os.environ.get("US_MARKET_SKILL_DIR", str(REPO_DIR / "skill")))
 if not SKILL_DIR.exists():
-    SKILL_DIR = REPO_DIR / "scripts/vendor"
+    bundled_skill = REPO_DIR / "skill"
+    SKILL_DIR = bundled_skill if bundled_skill.exists() else REPO_DIR / "scripts/vendor"
 TOOLS_DIR = SKILL_DIR / "scripts" if (SKILL_DIR / "scripts").exists() else SKILL_DIR
 OUTPUT_ROOT = Path(os.environ.get("RECAP_OUTPUT_ROOT", r"D:\codex\outputs\us_market_daily_recaps"))
 PYTHON = Path(sys.executable)
+
+
+def skill_bundle_hash(skill_dir: Path) -> str:
+    """Hash the tracked instructions and helper scripts used by this run."""
+    files = sorted(path for path in skill_dir.rglob("*") if path.is_file() and "__pycache__" not in path.parts)
+    digest = hashlib.sha256()
+    for path in files:
+        relative = path.relative_to(skill_dir).as_posix().encode("utf-8")
+        digest.update(relative)
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
 
 
 def run(args: list[str]) -> None:
@@ -158,6 +173,7 @@ def main() -> int:
     run([str(PYTHON), str(runtime / "build.py")])
 
     source_audit = write_source_audit(root, report, us, pipeline_started)
+    bundle_hash = skill_bundle_hash(SKILL_DIR)
 
     if not out_docx.is_file():
         raise RuntimeError(f"Word report was not created: {out_docx}")
@@ -178,6 +194,11 @@ def main() -> int:
         "source_audit_path": str(root / "source_audit.json"),
         "source_captured_at_utc": source_audit["captured_at_utc"],
         "data_quality": source_audit["quality"],
+        "skill_bundle": {
+            "root": str(SKILL_DIR),
+            "sha256": bundle_hash,
+            "tracked_instruction": str(SKILL_DIR / "SKILL.md"),
+        },
     }
     (root / "generation_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(manifest, ensure_ascii=False))

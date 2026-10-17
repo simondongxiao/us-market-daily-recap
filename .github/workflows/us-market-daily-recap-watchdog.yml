@@ -1,10 +1,10 @@
 name: US market daily recap watchdog
 
 on:
-  # 23:20 UTC = 07:20 Beijing time. This is a missed-run safety net, not a
+  # 23:23 UTC = 07:23 Beijing time. This is a missed-run safety net, not a
   # second report schedule; delivery_state.py suppresses duplicate work.
   schedule:
-    - cron: '20 23 * * *'
+    - cron: '23 23 * * *'
   workflow_dispatch:
     inputs:
       report_date_bjt:

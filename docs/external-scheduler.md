@@ -1,6 +1,6 @@
 # 外部调度触发方案
 
-原生 GitHub schedule 保留为兜底，当前仍是 `0 23 * * *`，对应北京时间 07:00。Scheduled #7 的唯一历史样本在整点触发后延迟了 141.7 分钟，但 Runner 排队只有 3 秒；这只能证明 GitHub 调度存在延迟，不能证明改成非整点就一定准时。因此本项目不把 `23:07` 之类的调整当成时间保证。
+原生 GitHub schedule 保留为兜底，当前是 `3 23 * * *`，对应北京时间 07:03。Scheduled #7 的历史样本在整点触发后延迟了 141.7 分钟，但 Runner 排队只有 3 秒；这只能证明 GitHub 调度存在延迟，不能证明改成非整点就一定准时。非整点只用于降低整点拥堵概率，不是准时保证。
 
 ## 推荐配置：cron-job.org
 
@@ -40,7 +40,7 @@ python scripts/setup_cron_job_org.py --disable
 python scripts/setup_cron_job_org.py --dry-run
 ```
 
-脚本不会把两个凭据写入仓库；配置后 GitHub PAT 会作为 cron-job.org 对 GitHub API 发请求的 `Authorization` 请求头保存。不要把 PAT 或 cron-job.org API key 提交到 GitHub。
+脚本不会把两个凭据写入仓库；配置后 GitHub PAT 会作为 cron-job.org 对 GitHub API 发请求的 `Authorization` 请求头保存。不要把 PAT 或 cron-job.org API key 提交到 GitHub。当前仓库只能自动完成 GitHub 侧的配置，cron-job.org 账户和两个凭据不在本地环境中，因此外部任务必须由用户完成一次 `--interactive` 配置；在此之前 GitHub schedule 和 watchdog 仍负责兜底。
 
 脚本实际设置的 POST 请求如下：
 
