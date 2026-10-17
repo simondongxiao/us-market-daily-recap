@@ -30,7 +30,13 @@ def skill_bundle_hash(skill_dir: Path) -> str:
         relative = path.relative_to(skill_dir).as_posix().encode("utf-8")
         digest.update(relative)
         digest.update(b"\0")
-        digest.update(path.read_bytes())
+        payload = path.read_bytes()
+        # GitHub-hosted Windows runners may checkout text files as CRLF while
+        # the local skill is LF. Normalize line endings so the hash measures
+        # content, not the checkout platform.
+        if path.suffix.lower() in {".md", ".py", ".json", ".txt"}:
+            payload = payload.replace(b"\r\n", b"\n")
+        digest.update(payload)
         digest.update(b"\0")
     return digest.hexdigest()
 

@@ -65,9 +65,8 @@ jobs:
               throw "Tracked Skill bundle is incomplete: $path"
             }
           }
-          $files = Get-ChildItem -LiteralPath "$env:CODEX_TASK_DIR\skill" -Recurse -File | Sort-Object FullName
-          $hash = ( $files | Get-FileHash -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLowerInvariant())  $($_.Path.Substring($env:CODEX_TASK_DIR.Length + 1))" } | Out-String ).Trim()
-          $bundleHash = $hash | Out-String | ForEach-Object { $bytes = [Text.Encoding]::UTF8.GetBytes($_); $sha = [Security.Cryptography.SHA256]::Create(); (($sha.ComputeHash($bytes) | ForEach-Object { $_.ToString('x2') }) -join '') }
+          $env:SKILL_HASH_TARGET = $env:US_MARKET_SKILL_DIR
+          $bundleHash = python -c "import os; from pathlib import Path; from scripts.generate_daily_recap import skill_bundle_hash; print(skill_bundle_hash(Path(os.environ['SKILL_HASH_TARGET'])))"
           Write-Host "skill_dir=$env:US_MARKET_SKILL_DIR"
           Write-Host "skill_bundle_sha256=$bundleHash"
 
