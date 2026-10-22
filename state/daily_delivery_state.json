@@ -150,7 +150,17 @@
       "word_url": "https://github.com/simondongxiao/us-market-daily-recap/blob/main/reports/us_market_recap_2026-10-22_BJT_us_2026-10-21_final.docx",
       "run_url": "https://github.com/simondongxiao/us-market-daily-recap/actions/runs/39696595017",
       "sent_at_utc": "2026-10-22T00:01:50.325727+00:00"
+    },
+    {
+      "status": "sent",
+      "report_date_bjt": "2026-10-23",
+      "us_trade_date": "2026-10-22",
+      "content_version": "ed66cd2c6eda1a7f0c1f4e45e16d5b7201c78965fe5470fb361b1e32726058b3:aa0609e9493fa1ecbd1b6014a9664d12d502040e6c3aade63f4c2ea5987c9c42",
+      "html_url": "https://simondongxiao.github.io/us-market-daily-recap/reports/us_market_recap_2026-10-23_BJT_us_2026-10-22_final.html",
+      "word_url": "https://github.com/simondongxiao/us-market-daily-recap/blob/main/reports/us_market_recap_2026-10-23_BJT_us_2026-10-22_final.docx",
+      "run_url": "https://github.com/simondongxiao/us-market-daily-recap/actions/runs/39872809276",
+      "sent_at_utc": "2026-10-22T23:41:21.131414+00:00"
     }
   ],
-  "updated_at_utc": "2026-10-22T00:01:50.325727+00:00"
+  "updated_at_utc": "2026-10-22T23:41:21.131414+00:00"
 }
