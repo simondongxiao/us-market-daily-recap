@@ -57,6 +57,7 @@ def write_source_audit(root: Path, report: str, us: str, started_at: dt.datetime
         "rotation_engine.json",
         "options_chain.json",
         "index_inclusion_watch.json",
+        "daily_movers.json",
     ]
     warnings: list[str] = []
     for name in required:
@@ -86,6 +87,7 @@ def write_source_audit(root: Path, report: str, us: str, started_at: dt.datetime
             "local rotation engine": {"artifacts": ["rotation_engine.json"]},
             "Nasdaq public option-chain endpoint": {"artifacts": ["options_chain.json"]},
             "index inclusion watchlist": {"artifacts": ["index_inclusion_watch.json"]},
+            "daily mover selection": {"artifacts": ["daily_movers.json", "sp500_breadth_detail.csv", "quotes.json"]},
         },
         "quality": {"degraded": bool(warnings), "warnings": warnings},
         "required_artifacts": required,
@@ -159,6 +161,7 @@ def main() -> int:
     materialize(REPO_DIR / "scripts/templates/make_assets_template.py", runtime / "make_assets.py", {
         'Path(r"D:\\codex\\outputs\\us_market_daily_recaps\\2026-10-13")': f'Path(r"{root}")',
     })
+    materialize(REPO_DIR / "scripts/templates/daily_movers_template.py", runtime / "daily_movers.py", {})
     out_docx = OUTPUT_ROOT / f"us_market_recap_{report}_BJT_us_{us}_final.docx"
     materialize(REPO_DIR / "scripts/templates/build_recap_template.py", runtime / "build.py", {
         'Path(r"D:\\codex\\outputs\\us_market_daily_recaps\\2026-10-13")': f'Path(r"{root}")',

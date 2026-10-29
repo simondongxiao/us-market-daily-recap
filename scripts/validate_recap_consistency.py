@@ -33,6 +33,7 @@ REQUIRED_DATA_FILES = [
     "rotation_engine.json",
     "options_chain.json",
     "index_inclusion_watch.json",
+    "daily_movers.json",
     "source_audit.json",
 ]
 
@@ -146,6 +147,14 @@ def main() -> int:
                 errors.append("source_audit.json date mapping does not match report")
             if source_audit.get("quality", {}).get("degraded"):
                 warnings.extend(source_audit.get("quality", {}).get("warnings", []))
+            movers_path = source_root / "daily_movers.json"
+            movers = json.loads(movers_path.read_text(encoding="utf-8"))
+            if not isinstance(movers.get("selected"), list):
+                errors.append("daily_movers.json selected is not a list")
+            if movers.get("selection_method", "").startswith("fixed"):
+                errors.append("daily_movers.json uses a fixed-list selection method")
+            if movers.get("universe_count", 0) == 0:
+                warnings.append("daily_movers_universe_empty")
         except (OSError, json.JSONDecodeError) as exc:
             errors.append(f"Invalid source_audit.json: {exc}")
     if args.previous_html and args.previous_html.is_file():
