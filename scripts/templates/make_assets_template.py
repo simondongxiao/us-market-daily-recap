@@ -8,6 +8,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from daily_movers import write_daily_movers
 
 
 ROOT = Path(r"D:\codex\outputs\us_market_daily_recaps\2026-10-13")
@@ -51,6 +52,8 @@ def bar(name: str, title: str, labels: list[str], values: list[float], xlabel: s
 
 def main() -> None:
     q = json.loads((ROOT / "quotes.json").read_text(encoding="utf-8"))
+    daily_movers = write_daily_movers(ROOT)
+    selected_movers = daily_movers.get("selected", [])
     sector_labels = {"XLK": "XLK 科技", "XLC": "XLC 通信服务", "XLY": "XLY 可选消费", "XLP": "XLP 必选消费", "XLF": "XLF 金融", "XLI": "XLI 工业", "XLE": "XLE 能源", "XLB": "XLB 材料", "XLV": "XLV 医疗保健", "XLRE": "XLRE 房地产", "XLU": "XLU 公用事业"}
     sectors = sorted(sector_labels, key=lambda s: q[s]["day"], reverse=True)
     bar("sector_bar.png", "Sector rotation | Energy, staples and communication led", [sector_labels[s] for s in sectors], [q[s]["day"] for s in sectors], height=4.6)
@@ -96,8 +99,8 @@ def main() -> None:
         values = [x[2] * 100 if x[2] >= .2 else (x[1] - 1) * 10 for x in flagged]
         bar("options_alerts.png", "Option-chain threshold alerts | structure, not confirmed direction", labels, values, xlabel="Strike share (%) or 10x Call/Put deviation", height=max(3.2, .38 * len(labels) + 1.4))
 
-    movers = sorted([(s, q[s]["day"], q[s].get("volume_ratio") or 0) for s in "META FICO FIGS MDT LITE COHR CIEN AAOI MU SNDK NVDA AVGO MRVL CRDO IONQ LCID".split()], key=lambda x: x[1], reverse=True)
-    bar("movers.png", "Material single-stock exceptions | 1D return", [f"{s}  {vratio:.2f}x vol" for s, _, vratio in movers], [v for _, v, _ in movers], height=5.5)
+    movers = [(x["ticker"], float(x["day"]), x.get("volume_ratio") or 0) for x in selected_movers]
+    bar("movers.png", "Material single-stock exceptions | selected from today's cross-section", [f"{s}  {vratio:.2f}x vol" for s, _, vratio in movers], [v for _, v, _ in movers], height=max(4.0, .34 * len(movers) + 1.8))
 
     # Keep the richer visual layer used by the earlier buy-side recap. The
     # compact charts above are useful for the first page; these drill-downs
@@ -146,11 +149,11 @@ def main() -> None:
     mag7 = present("META NVDA MSFT AMZN GOOGL AAPL TSLA".split())
     bar("mag7.png", "Mag 7 internal rotation | not a single basket", mag7, [q[s]["day"] for s in mag7], height=3.8)
 
-    pressure = sorted(present("LITE COHR CIEN AAOI ALAB CRDO SNDK MU MRVL NVDA AVGO ORCL".split()), key=lambda s: q[s]["day"])
-    bar("losers.png", "Pressure points | largest negative moves", pressure[:8], [q[s]["day"] for s in pressure[:8]], height=4.2)
+    pressure = sorted([(x["ticker"], float(x["day"])) for x in selected_movers if float(x["day"]) < 0], key=lambda x: x[1])
+    bar("losers.png", "Pressure points | today's largest negative moves", [s for s, _ in pressure[:8]], [v for _, v in pressure[:8]], height=max(3.4, .34 * len(pressure[:8]) + 1.5))
 
-    company_names = sorted(present("META FICO FIGS MDT LITE COHR CIEN AAOI MU SNDK NVDA AVGO MRVL CRDO IONQ LCID TWST".split()), key=lambda s: abs(q[s]["day"]), reverse=True)
-    bar("company_movers.png", "Company exceptions | absolute move and volume context", [f"{s} {q[s].get('volume_ratio', 0):.2f}x" for s in company_names[:12]], [q[s]["day"] for s in company_names[:12]], height=5.0)
+    company_names = [(x["ticker"], float(x["day"]), x.get("volume_ratio") or 0) for x in selected_movers]
+    bar("company_movers.png", "Company exceptions | today's dynamic movers", [f"{s} {vratio:.2f}x" for s, _, vratio in company_names], [v for _, v, _ in company_names], height=max(4.0, .34 * len(company_names) + 1.5))
 
     cross_names = present(["DX-Y.NYB", "CL=F", "BZ=F", "HG=F", "GC=F", "BTC-USD"])
     cross_labels = {"DX-Y.NYB": "DXY 美元", "CL=F": "WTI 原油", "BZ=F": "Brent 原油", "HG=F": "铜", "GC=F": "黄金", "BTC-USD": "BTC"}

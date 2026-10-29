@@ -11,6 +11,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_COLOR_INDEX
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
+from daily_movers import write_daily_movers
 
 ROOT = Path(r"D:\codex\outputs\us_market_daily_recaps\2026-10-13")
 OUT = Path(r"D:\codex\outputs\us_market_daily_recaps\us_market_recap_2026-10-13_BJT_us_2026-10-12_final.docx")
@@ -90,19 +91,24 @@ software_stats = ROT.get("stats", {}).get("software", {})
 semi_eq = float(semi_stats.get("equal_weight_1d", float("nan")))
 software_eq = float(software_stats.get("equal_weight_1d", float("nan")))
 semi_spread = semi_eq - software_eq
-exception_names = ["LITE", "CIEN", "COHR", "AAOI", "CRDO", "FICO", "FIGS", "MDT", "TWST"]
-exception_text = "、".join(f"{s} {pct(s)}" for s in exception_names if s in Q and Q[s].get("day") is not None) or "未识别出可用的单股异常"
+daily_movers = write_daily_movers(ROOT)
+selected_movers = daily_movers.get("selected", [])
+exception_names = [x["ticker"] for x in selected_movers]
+exception_text = "、".join(
+    f"{x['ticker']}（{x.get('industry', '行业待核')}）{x['day']:+.2f}%"
+    for x in selected_movers
+) or "未识别出可用的单股异常"
 ai_tier_1 = ["NVDA", "AVGO", "MSFT", "META"]
 ai_tier_2 = ["MU", "SNDK", "MRVL", "CRDO", "LITE", "COHR"]
 ai_tier_1_text = "、".join(f"{s} {pct(s)}" for s in ai_tier_1 if s in Q and Q[s].get("day") is not None)
 ai_tier_2_text = "、".join(f"{s} {pct(s)}" for s in ai_tier_2 if s in Q and Q[s].get("day") is not None)
-stock_movers = sorted(
-    [(s, float(Q[s]["day"]), Q[s].get("volume_ratio")) for s in STOCKS if s in Q and Q[s].get("day") is not None],
-    key=lambda x: abs(x[1]), reverse=True,
-)[:6]
+stock_movers = [
+    (x["ticker"], float(x["day"]), x.get("volume_ratio"), x.get("relative_vs_spy"), x.get("selection_reasons", []), x.get("industry", "行业待核"))
+    for x in selected_movers
+]
 stock_mover_text = "；".join(
-    f"{s} {v:+.2f}%（成交约{vr:.2f}x均量）" if vr is not None else f"{s} {v:+.2f}%"
-    for s, v, vr in stock_movers
+    f"{s} {v:+.2f}%（{industry}；成交约{vr:.2f}x均量）" if vr is not None else f"{s} {v:+.2f}%（{industry}）"
+    for s, v, vr, _, _, industry in stock_movers
 ) or "未识别出可用的异动个股"
 option_checked_at = OPTIONS.get("checked_at_et", "检查时间不可得")
 matrix_digest = "；".join(
@@ -271,7 +277,7 @@ chart("rotation_leadership_heatmap.png", "Leadership Heatmap（领导力轮动�
 chart("rotation_mag7_heatmap.png", "Mag 7 Internal Heatmap（内部轮动）", "Mag 7 单股 1D/5D/20D 与相对 SPY；不把权重股表现自动写成行业普涨。")
 para("领导力读法：先看热图中同一方向的横截面广度，再看 1D、5D、20D 是否一致；若只有少数大市值股票支撑指数，而等权篮子和细分行业走弱，应定义为权重挤压而不是广泛风险偏好改善。")
 chart("rotation_subsector_heatmap.png", "Subsector Rotation Map（细分行业）", "本地 rotation_engine；加入 XBI、IHI、XHE、CIBR、SKYY、XME、COPX、GDX、KRE、XRT、XHB、ITA 等行业/主题代理。")
-para(f"异常个股必须回填在行业图旁：本次扫描得到 {exception_text}。这些是价格/成交异常候选，若当天没有新公告、研报、公司交流或可验证传闻，只能标为结构性重定价或待验，不能把行业 ETF 变化直接当成单股原因。")
+para(f"异常个股必须回填在行业图旁：本次先从 {daily_movers.get('universe_count', 0)} 个可用单股样本中按当日绝对涨跌、相对 SPY、成交量和新高/新低筛出 {daily_movers.get('selected_count', 0)} 个候选：{exception_text}。固定 AI/光通信名单只用于覆盖扫描，未进入当日异动排序的标的不进入本节归因。若当天没有新公告、研报、公司交流或可验证传闻，只能标为结构性重定价或待验，不能把行业 ETF 变化直接当成单股原因。")
 chart("rotation_semi_software.png", "Semi vs Software：横截面当日收益", "本地 rotation_engine；各自12只代表性成分，等权。")
 chart("rotation_semi_software_spread.png", "Semi - Software Daily Spread", "定义：Semi - Software > 0 表示半导体跑赢软件；< 0 表示软件跑赢半导体。")
 para(f"图表解读：半导体等权当日 {semi_eq:+.2f}%，软件等权 {software_eq:+.2f}%，价差（Semi - Software）{semi_spread:+.2f} 个百分点；正值表示半导体相对跑赢，负值表示软件相对跑赢。两者绝对涨跌、ETF 权重和中位数可能不同，不能只凭价差判断整个科技板块方向。")
@@ -295,8 +301,10 @@ para(f"因子结论：SPHB {pct('SPHB')} 对比 USMV {pct('USMV')}（差 {spread
 
 heading("5. Today's Company Expectation Resets")
 reset_rows = []
-for s, value, volume_ratio in stock_movers[:6]:
-    reset_rows.append([s, f"价格 {value:+.2f}%；成交 {volume_ratio:.2f}x均量" if volume_ratio is not None else f"价格 {value:+.2f}%", "待核验同日增量", "先归为公司/行业/因子重定价候选；没有新证据不升级为催化"])
+for s, value, volume_ratio, relative_vs_spy, reasons, industry in stock_movers[:6]:
+    relative_text = f"；相对SPY {relative_vs_spy:+.2f}pp" if relative_vs_spy is not None else ""
+    volume_text = f"；成交 {volume_ratio:.2f}x均量" if volume_ratio is not None else "；成交不可得"
+    reset_rows.append([s, f"{industry}；价格 {value:+.2f}%{relative_text}{volume_text}", ", ".join(reasons) or "absolute_move_outlier", "待核验同日增量；先归为公司/行业/因子重定价候选，不把涨跌倒推成原因"])
 table(["公司/主题", "今日价格证据", "状态", "市场含义"], reset_rows or [["无", "核心异动样本不可得", "不可得", "不编造公司原因"]], widths=[1.45, 2.05, 1.0, 2.0])
 para("事件闸门：只有当当天有新公告、正式报告、公司交流、明确指引或可验证的市场结构证据，才升级为个股催化。旧财报只作为估值和预期背景，不重复追踪。")
 
@@ -328,9 +336,10 @@ heading("8. Decliners & Kill Reasons")
 chart("losers.png", "Pressure Points", "按代表性科技、光互联、存储与高 Beta 标的目标日跌幅排序。")
 chart("company_movers.png", "Company Exceptions", "按绝对涨跌筛选，并显示成交量相对30日均量；异常不等于催化。")
 decliner_rows = []
-for s, value, volume_ratio in sorted([(s, float(Q[s]["day"]), Q[s].get("volume_ratio")) for s in STOCKS if s in Q and Q[s].get("day") is not None and Q[s]["day"] < 0], key=lambda x: x[1])[:6]:
+for s, value, volume_ratio, relative_vs_spy, reasons, industry in sorted((x for x in stock_movers if x[1] < 0), key=lambda x: x[1])[:6]:
     vol_text = f"{volume_ratio:.2f}x均量" if volume_ratio is not None else "成交不可得"
-    decliner_rows.append([s, f"{value:+.2f}%", vol_text, "当日价格/成交异常；需用同日公告、研报、交流或产业数据确认原因"])
+    relative_text = f"；相对SPY {relative_vs_spy:+.2f}pp" if relative_vs_spy is not None else ""
+    decliner_rows.append([s, f"{industry} {value:+.2f}%", f"{vol_text}{relative_text}", "当日价格/成交异常；需用同日公告、研报、交流或产业数据确认原因"])
 table(["标的", "当日", "成交/状态", "当前可验证解释"], decliner_rows or [["无", "—", "—", "未发现可用的下跌异常样本"]], widths=[1.0, 1.0, 1.35, 3.0])
 para("Kill reason 的写法：先写价格和成交，再写可验证事件，最后写结构性解释与待验项。没有新公告时，不把旧财报、传闻或行业图表强行包装成“今日公司事件”。")
 

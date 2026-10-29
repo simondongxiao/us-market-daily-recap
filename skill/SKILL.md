@@ -94,6 +94,14 @@ The causal workflow is: `OBSERVED TAPE -> SAME-DAY EVIDENCE -> EXPECTATION DELTA
 
 Increase information density by going one layer below the headline. For the day's 3-6 most material companies or themes, use a compact expectation-reset card rather than adding more generic prose. Select names by abnormal absolute/relative move, volume, breadth impact, a verified same-day event, or a material forward catalyst; do not fill a fixed company quota.
 
+#### Daily Mover Selection Is Mandatory
+
+The daily anomaly list must be created from the target US cash session's actual cross-section before any cause search. Build and save `daily_movers.json` after collecting the target-date quote universe and the broadest available constituent cross-section (prefer S&P 500 breadth detail or an equivalent public mover feed). Exclude ETFs, indexes, futures, crypto, and macro proxies from the single-stock list. Rank candidates by absolute 1D move, return relative to SPY and the relevant industry proxy, relative volume, breadth impact, and new-high/new-low status; select both gainers and decliners when both sides are available. A practical default is the top 3-6 material names, with a larger list only when the tape is unusually dispersed.
+
+Fixed AI, Mag 7, optical, memory, semiconductor, or company watchlists are scan universes only. They may enter the daily anomaly narrative only when they pass the target-day mover gate or have a verified `SESSION_NEW`/`CONTINUING_REPRICING` event. A static `exception_names`/`company_names` list must never populate the daily anomaly chart, company reset table, or decliner table. If a fixed-watch name is not selected by today's data, omit it from those sections even if it appeared yesterday.
+
+For every selected mover, retain `ticker`, industry, target US trade date, absolute return, SPY/industry-relative return when available, volume or `source unavailable`, selection rank/reason, source, and event-lifecycle status. The chart and the prose must read the same selection artifact. If the broad cross-section cannot be collected, label the coverage universe and data-quality limitation explicitly; do not silently fall back to a recurring fixed list. After selection, search that day's filings, reports, company communication, industry data, attributed rumors, and positioning evidence for the reason. No credible event means `待验/结构性解释`, not a recycled explanation from a prior day.
+
 Each selected card must answer, when data permits:
 
 1. `Price fact`: absolute return, sector/index-relative return, volume confirmation, and intraday timing.
