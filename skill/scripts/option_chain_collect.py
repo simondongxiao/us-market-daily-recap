@@ -12,6 +12,8 @@ import json
 import math
 import re
 import sys
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
@@ -28,10 +30,19 @@ HEADERS = {
 }
 
 
-def fetch_json(url: str) -> dict:
-    req = urllib.request.Request(url, headers=HEADERS)
-    with urllib.request.urlopen(req, timeout=30) as response:
-        return json.loads(response.read().decode("utf-8"))
+def fetch_json(url: str, attempts: int = 3) -> dict:
+    last_error = None
+    for attempt in range(attempts):
+        req = urllib.request.Request(url, headers=HEADERS)
+        try:
+            with urllib.request.urlopen(req, timeout=30) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except (urllib.error.URLError, TimeoutError, ConnectionResetError) as exc:
+            last_error = exc
+            if attempt + 1 >= attempts:
+                raise
+            time.sleep(1.5 * (attempt + 1))
+    raise RuntimeError(f"option-chain request failed without a response: {last_error}")
 
 
 def num(value):
