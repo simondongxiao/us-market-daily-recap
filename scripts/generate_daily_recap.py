@@ -157,8 +157,6 @@ def main() -> int:
     materialize(REPO_DIR / "scripts/templates/collect_template.py", runtime / "collect.py", {
         'pd.Timestamp("2026-10-12")': f'pd.Timestamp("{us}")',
         'Path(r"D:\\codex\\outputs\\us_market_daily_recaps\\2026-10-13")': f'Path(r"{root}")',
-        '"2026-10-12", "2026-10-13", "5m"': f'"{us}", "{report}", "5m"',
-        '"2025-09-01", "2026-10-13"': f'"2025-09-01", "{report}"',
         'end: str = "2026-10-14"': f'end: str = "{tomorrow}"',
         'Path(r"D:\\codex\\outputs\\us_market_daily_recaps\\2026-10-10\\sp500_members.csv")': f'Path(r"{REPO_DIR / "data/sp500_members.csv"}")',
     })

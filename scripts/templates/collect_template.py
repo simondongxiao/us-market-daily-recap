@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+import datetime as dt
 import json
 import time
 from pathlib import Path
@@ -11,6 +12,7 @@ import requests
 
 
 DAY = pd.Timestamp("2026-10-12")
+FETCH_END = (DAY + pd.Timedelta(days=1)).date().isoformat()
 ROOT = Path(r"D:\codex\outputs\us_market_daily_recaps\2026-10-13")
 ROOT.mkdir(parents=True, exist_ok=True)
 API = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
@@ -160,13 +162,16 @@ def collect_intraday() -> list[dict]:
     rows = []
     for symbol in ["SPY", "QQQ", "RSP", "IWM", "SOXX", "IGV", "XLE", "XLC", "XLK"]:
         try:
-            frame = fetch_chart(symbol, "2026-10-13", "2026-10-14", "5m")
-            frame = frame.between_time("09:30", "16:00")
-            frame.rename(columns={"close": "Close", "open": "Open", "high": "High", "low": "Low", "volume": "Volume"}, inplace=True)
+            frame = fetch_chart(symbol, DAY.date().isoformat(), FETCH_END, "5m")
+            frame = frame.loc[frame.index.normalize() == DAY.normalize()].between_time("09:30", "16:00").copy()
+            if len(frame) < 70 or frame.index.max().time() < dt.time(15, 55):
+                raise RuntimeError(f"incomplete target-session intraday data; bars={len(frame)}")
+            frame = frame.rename(columns={"close": "Close", "open": "Open", "high": "High", "low": "Low", "volume": "Volume"})
             frame.to_csv(ROOT / f"{symbol}_intraday.csv")
             late = frame.between_time("15:40", "16:00")
             rows.append({
                 "symbol": symbol,
+                "trade_date": DAY.date().isoformat(),
                 "open_return": float((frame.Close.iloc[-1] / frame.Open.iloc[0] - 1) * 100),
                 "late_return": float((late.Close.iloc[-1] / late.Open.iloc[0] - 1) * 100),
                 "volume_share": float(late.Volume.sum() / frame.Volume.sum() * 100) if frame.Volume.sum() else None,
@@ -186,7 +191,7 @@ def collect_breadth() -> None:
     symbols = [str(x).replace(".", "-") for x in members["Symbol"].dropna()]
     def one(symbol: str) -> dict:
         try:
-            frame = fill_target_cash_session(symbol, fetch_chart(symbol, "2025-09-01", "2026-10-14"))
+            frame = fill_target_cash_session(symbol, fetch_chart(symbol, "2025-09-01", FETCH_END))
             close = frame["close"].dropna()
             high = frame["high"].dropna()
             low = frame["low"].dropna()

@@ -22,6 +22,8 @@ B = json.loads((ROOT / "breadth.json").read_text(encoding="utf-8"))
 ROT = json.loads((ROOT / "rotation_engine.json").read_text(encoding="utf-8"))
 OPTIONS = json.loads((ROOT / "options_chain.json").read_text(encoding="utf-8"))
 WATCH = json.loads((ROOT / "index_inclusion_watch.json").read_text(encoding="utf-8"))
+INTRADAY_PATH = ROOT / "intraday.json"
+INTRADAY = json.loads(INTRADAY_PATH.read_text(encoding="utf-8")) if INTRADAY_PATH.exists() else []
 EVENTS_PATH = ROOT / "company_events.json"
 COMPANY_EVENTS = json.loads(EVENTS_PATH.read_text(encoding="utf-8")) if EVENTS_PATH.exists() else {"events": [], "market_sources": []}
 EVENT_BY_TICKER = {str(item.get("ticker", "")).upper(): item for item in COMPANY_EVENTS.get("events", []) if item.get("ticker")}
@@ -82,6 +84,20 @@ sector_days.sort(key=lambda x: x[1], reverse=True)
 sector_leaders = "、".join(f"{s}（{SECTOR_LABELS[s]}）{v:+.2f}%" for s, v in sector_days[:3]) or "数据不可得"
 sector_laggards = "、".join(f"{s}（{SECTOR_LABELS[s]}）{v:+.2f}%" for s, v in sector_days[-3:]) or "数据不可得"
 sector_median = sorted(v for _, v in sector_days)[len(sector_days) // 2] if sector_days else float("nan")
+
+valid_intraday = [
+    x for x in INTRADAY
+    if not x.get("error") and x.get("trade_date") == US_TRADE_DATE and x.get("late_return") is not None
+]
+if valid_intraday:
+    late_sorted = sorted(valid_intraday, key=lambda x: float(x["late_return"]), reverse=True)
+    late_strong = "、".join(f"{x['symbol']} {float(x['late_return']):+.2f}%" for x in late_sorted[:2])
+    late_weak = "、".join(f"{x['symbol']} {float(x['late_return']):+.2f}%" for x in late_sorted[-2:])
+    moc_data = f"价格代理可得（{len(valid_intraday)}/9）"
+    moc_read = f"尾20分钟相对最强 {late_strong}；相对最弱 {late_weak}。仅为价格变化，不是官方MOC金额或买卖失衡"
+else:
+    moc_data = "不可得"
+    moc_read = "目标交易日5分钟序列未通过完整性校验，不能判断尾盘价格方向"
 
 
 def sector_bucket(symbol: str) -> str:
@@ -274,7 +290,7 @@ table(["资产/指标", "收盘/状态", "当日", "5D", "读法"], [
     ["VIX / VVIX / SKEW", f"{val('^VIX')} / {val('^VVIX')} / {val('^SKEW')}", pct("^VIX"), "—", "以实际变动判断保护需求"],
     ["DXY / WTI / BTC", f"{val('DX-Y.NYB')} / {val('CL=F')} / {btc_usd_10k()}", f"DXY {pct('DX-Y.NYB')} / WTI {pct('CL=F')} / BTC {pct('BTC-USD')}", "—", "跨资产确认或反驳风险偏好叙事"],
 ], widths=[1.35, 1.35, .9, .9, 2.0])
-chart("sector_bar.png", "板块当日表现与成交相对强度", "Yahoo Finance Chart API；日收益率，成交相对30日均量。", width=5.85)
+chart("sector_bar.png", "板块当日表现与成交相对强度", "Yahoo Finance Chart API；日收益率，成交相对30日均量。", width=5.15)
 para(f"图表读法：当日相对最强为 {sector_leaders}，相对最弱为 {sector_laggards}；上涨占比 {B.get('up_pct', float('nan')):.1f}%。需要把 ETF 表现和单股异常分开读，不能用行业平均替代个股催化。")
 
 heading("2. Rotation & Leadership Dashboard")
@@ -387,7 +403,7 @@ chart("macro_curve.png", "10Y Treasury Yield Proxy", "^TNX 公开代理；前收
 table(["指标", "数据", "结论"], [
     ["VIX / VVIX / SKEW", f"{val('^VIX')} / {val('^VVIX')} / {val('^SKEW')}", "波动率与尾部保护需求偏高，但未到恐慌级"],
     ["0DTE / GEX", "不可得", "没有公开、可审计的全市场实时 GEX，不推断正/负 Gamma"],
-    ["MOC / 尾盘20分钟", "不可得", "5分钟接口本次返回空序列，不能判断 Imbalance Buy/Sell"],
+    ["MOC / 尾盘20分钟", moc_data, moc_read],
     ["GS/PB / CTA", "不可得", "不披露内部净买入、总交易量或实时触发线"],
 ], widths=[1.5, 1.4, 3.6])
 para(f"今天可确认的是价格与横截面结构：标普 {pct('^GSPC')}、纳指 {pct('^IXIC')}，广度上涨占比 {B.get('up_pct', float('nan')):.1f}%，QQQ 对 RSP 的日差为 {spread('QQQ', 'RSP'):+.2f}pp，高 Beta 对低波动为 {spread('SPHB', 'USMV'):+.2f}pp。因此对冲基金去杠杆仍是结构性假设，而不是已经被 PB 数据证实的事实。")
