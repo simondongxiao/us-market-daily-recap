@@ -22,6 +22,9 @@ B = json.loads((ROOT / "breadth.json").read_text(encoding="utf-8"))
 ROT = json.loads((ROOT / "rotation_engine.json").read_text(encoding="utf-8"))
 OPTIONS = json.loads((ROOT / "options_chain.json").read_text(encoding="utf-8"))
 WATCH = json.loads((ROOT / "index_inclusion_watch.json").read_text(encoding="utf-8"))
+EVENTS_PATH = ROOT / "company_events.json"
+COMPANY_EVENTS = json.loads(EVENTS_PATH.read_text(encoding="utf-8")) if EVENTS_PATH.exists() else {"events": [], "market_sources": []}
+EVENT_BY_TICKER = {str(item.get("ticker", "")).upper(): item for item in COMPANY_EVENTS.get("events", []) if item.get("ticker")}
 
 
 def pct(symbol: str, field: str = "day") -> str:
@@ -110,6 +113,10 @@ stock_mover_text = "；".join(
     f"{s} {v:+.2f}%（{industry}；成交约{vr:.2f}x均量）" if vr is not None else f"{s} {v:+.2f}%（{industry}）"
     for s, v, vr, _, _, industry in stock_movers
 ) or "未识别出可用的异动个股"
+event_digest = "；".join(
+    f"{ticker}（{EVENT_BY_TICKER[ticker].get('status', '待验')}）：{EVENT_BY_TICKER[ticker].get('cause', '原因待核')}"
+    for ticker in exception_names if ticker in EVENT_BY_TICKER
+)
 option_checked_at = OPTIONS.get("checked_at_et", "检查时间不可得")
 matrix_digest = "；".join(
     f"{x['pair']} 1D {x['1d']:+.2f}pp / 5D {x['5d']:+.2f}pp / 20D {x['20d']:+.2f}pp（{x['regime']}）"
@@ -304,8 +311,16 @@ reset_rows = []
 for s, value, volume_ratio, relative_vs_spy, reasons, industry in stock_movers[:6]:
     relative_text = f"；相对SPY {relative_vs_spy:+.2f}pp" if relative_vs_spy is not None else ""
     volume_text = f"；成交 {volume_ratio:.2f}x均量" if volume_ratio is not None else "；成交不可得"
-    reset_rows.append([s, f"{industry}；价格 {value:+.2f}%{relative_text}{volume_text}", ", ".join(reasons) or "absolute_move_outlier", "待核验同日增量；先归为公司/行业/因子重定价候选，不把涨跌倒推成原因"])
+    event = EVENT_BY_TICKER.get(s)
+    status = event.get("status", "待验") if event else "待验"
+    meaning = event.get("cause") if event else "待核验同日增量；先归为公司/行业/因子重定价候选，不把涨跌倒推成原因"
+    reset_rows.append([s, f"{industry}；价格 {value:+.2f}%{relative_text}{volume_text}", status, meaning])
 table(["公司/主题", "今日价格证据", "状态", "市场含义"], reset_rows or [["无", "核心异动样本不可得", "不可得", "不编造公司原因"]], widths=[1.45, 2.05, 1.0, 2.0])
+for ticker in exception_names:
+    event = EVENT_BY_TICKER.get(ticker)
+    if not event:
+        continue
+    para(f"{ticker}（{event.get('industry', '行业待核')}，{event.get('status', '待验')}）：{event.get('cause', '原因待核')}。交易解读：{event.get('interpretation', '需继续观察价格、成交与后续公司信息。')}")
 para("事件闸门：只有当当天有新公告、正式报告、公司交流、明确指引或可验证的市场结构证据，才升级为个股催化。旧财报只作为估值和预期背景，不重复追踪。")
 
 heading("6. Technology Sector Scan")
@@ -316,7 +331,7 @@ chart("movers.png", "科技与主题异动个股", "Yahoo Finance Chart API；�
 chart("optical.png", "Optical / AI Networking Exceptions", "光模块、互联、存储与半导体代表股；按目标日价格表现排序。")
 chart("memory.png", "Memory and Server Chain", "MU、SNDK、WDC、STX 与服务器/系统代表股；价格横截面，不替代供需验证。")
 chart("mag7.png", "Mag 7 Internal Rotation", "Mag 7 单股目标日收益；用于识别权重集中和内部背离。")
-para(f"异动原因必须逐个核验：按绝对涨跌筛出的候选为 {stock_mover_text}。这些名字先记录为价格/成交异常，随后核对同日公告、研报、公司交流、行业数据或传闻原始出处；没有证据时保留“待验”，不把涨跌倒推成原因。")
+para(f"异动原因必须逐个核验：按绝对涨跌筛出的候选为 {stock_mover_text}。本次已取得的同日归因为：{event_digest or '未取得可验证增量，全部保留待验'}。未取得证据的名字只记录价格/成交异常，不把涨跌倒推成原因。")
 
 heading("7. Non-Tech Sector Scan")
 chart("sectors.png", "11-Sector Industry Map", "SPDR 行业 ETF；每个代码均带行业关键词。")
@@ -339,7 +354,9 @@ decliner_rows = []
 for s, value, volume_ratio, relative_vs_spy, reasons, industry in sorted((x for x in stock_movers if x[1] < 0), key=lambda x: x[1])[:6]:
     vol_text = f"{volume_ratio:.2f}x均量" if volume_ratio is not None else "成交不可得"
     relative_text = f"；相对SPY {relative_vs_spy:+.2f}pp" if relative_vs_spy is not None else ""
-    decliner_rows.append([s, f"{industry} {value:+.2f}%", f"{vol_text}{relative_text}", "当日价格/成交异常；需用同日公告、研报、交流或产业数据确认原因"])
+    event = EVENT_BY_TICKER.get(s)
+    explanation = event.get("cause") if event else "当日价格/成交异常；需用同日公告、研报、交流或产业数据确认原因"
+    decliner_rows.append([s, f"{industry} {value:+.2f}%", f"{vol_text}{relative_text}", explanation])
 table(["标的", "当日", "成交/状态", "当前可验证解释"], decliner_rows or [["无", "—", "—", "未发现可用的下跌异常样本"]], widths=[1.0, 1.0, 1.35, 3.0])
 para("Kill reason 的写法：先写价格和成交，再写可验证事件，最后写结构性解释与待验项。没有新公告时，不把旧财报、传闻或行业图表强行包装成“今日公司事件”。")
 
@@ -394,12 +411,20 @@ chart("factor_proxy.png", "Appendix: factor proxies", "同上；ETF代理，不�
 para("数据完整性：核心日线若缺少目标日收盘，则由 Yahoo Chart API 的目标交易日 5分钟常规现金盘聚合重建，并在运行日志保留该口径；S&P 500 成分广度与行业代理均经过目标日校验。期权链为公开快照，PB、CTA、真实 GEX、执行方向仍不可得；所有不可得项均保留为“不可得”，没有用估计值替代。")
 
 heading("15. Sources")
-link("AP market recap（指数、板块与个股收盘摘要）", "https://apnews.com/article/f07713e8b2e438ac5903b50f5ce97235")
-link("Meta 官方：Muse Wonder / Muse Wonder Full", "https://about.fb.com/news/2026/10/introducing-muse-wonder-models/")
-link("Broadcom CEO AI 预期相关二手报道", "https://www.investing.com/news/stock-market-news/broadcom-ceo-says-many-ai-investors-are-gamblers-4943815")
+seen_sources = set()
+for source in COMPANY_EVENTS.get("market_sources", []):
+    url = source.get("url")
+    if url and url not in seen_sources:
+        link(source.get("label", url), url)
+        seen_sources.add(url)
+for event in COMPANY_EVENTS.get("events", []):
+    for source in event.get("sources", []):
+        url = source.get("url")
+        if url and url not in seen_sources:
+            link(f"{event.get('ticker', '')}：{source.get('label', url)}", url)
+            seen_sources.add(url)
 link("Nasdaq public option chain example: LITE", "https://www.nasdaq.com/market-activity/stocks/lite/option-chain")
 link("Yahoo Finance Chart API example: SPY", "https://query1.finance.yahoo.com/v8/finance/chart/SPY")
-link("BLS October 2026 release schedule", "https://www.bls.gov/schedule/2026/10_sched_list.htm")
 para("方法声明：本报告为收盘后复盘，不构成投资建议。公司事件优先使用官方公告；媒体和二手报道只作为待验线索。价格归因区分“已确认”“二手报道”“结构性解释”“待验”，避免把相关性写成因果性。", small=True)
 
 OUT.parent.mkdir(parents=True, exist_ok=True)

@@ -59,6 +59,9 @@ def write_source_audit(root: Path, report: str, us: str, started_at: dt.datetime
         "index_inclusion_watch.json",
         "daily_movers.json",
     ]
+    company_events = root / "company_events.json"
+    if company_events.is_file() and company_events.stat().st_size:
+        required.append("company_events.json")
     warnings: list[str] = []
     for name in required:
         path = root / name
@@ -88,6 +91,7 @@ def write_source_audit(root: Path, report: str, us: str, started_at: dt.datetime
             "Nasdaq public option-chain endpoint": {"artifacts": ["options_chain.json"]},
             "index inclusion watchlist": {"artifacts": ["index_inclusion_watch.json"]},
             "daily mover selection": {"artifacts": ["daily_movers.json", "sp500_breadth_detail.csv", "quotes.json"]},
+            "same-day company event research": {"artifacts": ["company_events.json"]} if company_events.is_file() else {"artifacts": []},
         },
         "quality": {"degraded": bool(warnings), "warnings": warnings},
         "required_artifacts": required,
