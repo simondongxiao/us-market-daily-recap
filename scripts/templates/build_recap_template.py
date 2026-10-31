@@ -390,11 +390,16 @@ for x in OPTIONS.get("results", []):
     alerts = [a for a in x.get("option_alerts", []) if a != "no_threshold_alert"]
     if alerts or x["ticker"] in {"LITE", "COHR", "CIEN", "AAOI", "MU", "SNDK", "NVDA", "AVGO", "META", "FICO", "TWST", "CRDO", "MRVL"}:
         label = ", ".join(alerts) if alerts else "无阈值报警"
-        opt_rows.append([x["ticker"], x.get("expiry_near", "不可得"), f"{x.get('call_put_volume_ratio', float('nan')):.2f}", f"{x.get('max_strike_volume_share', float('nan')):.1%}", label])
+        ratio = x.get("call_put_volume_ratio")
+        strike_share = x.get("max_strike_volume_share")
+        ratio_text = "不可得" if ratio is None or pd.isna(ratio) else f"{float(ratio):.2f}"
+        strike_text = "不可得" if strike_share is None or pd.isna(strike_share) else f"{float(strike_share):.1%}"
+        opt_rows.append([x["ticker"], x.get("expiry_near") or "不可得", ratio_text, strike_text, label])
 table(["标的", "近月到期", "Call/Put成交量", "最大执行价成交占比", "提示"], opt_rows, widths=[.75, 1.15, 1.25, 1.4, 2.0])
 chart("options_alerts.png", "公开期权链异常扫描", f"Nasdaq public option-chain endpoint；检查时点 {option_checked_at}；无执行方向确认。")
-option_alert_names = [x["ticker"] for x in OPTIONS.get("results", []) if x.get("option_alerts") and any(a != "no_threshold_alert" for a in x.get("option_alerts", []))]
-para(f"解读规则：本次触发异常阈值的标的为 {', '.join(option_alert_names) if option_alert_names else '无'}。执行价集中度只能说明成交/未平仓结构围绕少数执行价聚集，可能对应事件对冲、做市商库存管理、价位 pinning 或投机性集中下注；在没有执行侧、开平仓、扫单/大宗标签时，不等于看涨、看跌、净买入或净卖出。")
+option_alert_names = [x["ticker"] for x in OPTIONS.get("results", []) if x.get("data_status") == "available" and any(a not in {"no_threshold_alert", "source unavailable"} for a in x.get("option_alerts", []))]
+option_unavailable_names = [x["ticker"] for x in OPTIONS.get("results", []) if x.get("data_status") != "available"]
+para(f"解读规则：本次触发异常阈值的标的为 {', '.join(option_alert_names) if option_alert_names else '无'}；来源不可得为 {', '.join(option_unavailable_names) if option_unavailable_names else '无'}。执行价集中度只能说明成交/未平仓结构围绕少数执行价聚集，可能对应事件对冲、做市商库存管理、价位 pinning 或投机性集中下注；在没有执行侧、开平仓、扫单/大宗标签时，不等于看涨、看跌、净买入或净卖出。")
 para("期权数据限制：本次优先抓取 Nasdaq 公共链，StockWe 每笔成交方向未形成可验证数据；缺少执行侧、开平仓、IV历史与 GEX，故不编造“机构买 Call/买 Put”结论。")
 
 heading("11. Derivatives, Gamma & Flows")
@@ -408,7 +413,6 @@ table(["指标", "数据", "结论"], [
 ], widths=[1.5, 1.4, 3.6])
 para(f"今天可确认的是价格与横截面结构：标普 {pct('^GSPC')}、纳指 {pct('^IXIC')}，广度上涨占比 {B.get('up_pct', float('nan')):.1f}%，QQQ 对 RSP 的日差为 {spread('QQQ', 'RSP'):+.2f}pp，高 Beta 对低波动为 {spread('SPHB', 'USMV'):+.2f}pp。因此对冲基金去杠杆仍是结构性假设，而不是已经被 PB 数据证实的事实。")
 
-doc.add_page_break()
 heading("12. Post-Bell / Next Session")
 table(["时间/事件", "状态", "跟踪重点"], [
     [f"{US_TRADE_DATE} 美股交易日", "已完成", "观察 SOXX/光通信是否出现相对止跌，及 RSP-SPY 价差是否继续扩大"],

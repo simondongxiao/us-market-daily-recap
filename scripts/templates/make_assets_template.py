@@ -90,7 +90,9 @@ def main() -> None:
     options = json.loads((ROOT / "options_chain.json").read_text(encoding="utf-8"))["results"]
     flagged = []
     for row in options:
-        alerts = [x for x in row.get("option_alerts", []) if x != "no_threshold_alert"]
+        if row.get("data_status") != "available":
+            continue
+        alerts = [x for x in row.get("option_alerts", []) if x not in {"no_threshold_alert", "source unavailable"}]
         if alerts:
             flagged.append((row["ticker"], row.get("call_put_volume_ratio") or 0, row.get("max_strike_volume_share") or 0, ", ".join(alerts)))
     if flagged:
@@ -99,8 +101,9 @@ def main() -> None:
         values = [x[2] * 100 if x[2] >= .2 else (x[1] - 1) * 10 for x in flagged]
         bar("options_alerts.png", "Option-chain threshold alerts | structure, not confirmed direction", labels, values, xlabel="Strike share (%) or 10x Call/Put deviation", height=max(3.2, .38 * len(labels) + 1.4))
 
-    movers = [(x["ticker"], float(x["day"]), x.get("volume_ratio") or 0) for x in selected_movers]
-    bar("movers.png", "Material single-stock exceptions | selected from today's cross-section", [f"{s}  {vratio:.2f}x vol" for s, _, vratio in movers], [v for _, v, _ in movers], height=max(4.0, .34 * len(movers) + 1.8))
+    movers = [(x["ticker"], float(x["day"]), x.get("volume_ratio")) for x in selected_movers]
+    mover_labels = [f"{s}  {vratio:.2f}x vol" if vratio is not None else f"{s}  N/A vol" for s, _, vratio in movers]
+    bar("movers.png", "Material single-stock exceptions | selected from today's cross-section", mover_labels, [v for _, v, _ in movers], height=max(4.0, .34 * len(movers) + 1.8))
 
     # Keep the richer visual layer used by the earlier buy-side recap. The
     # compact charts above are useful for the first page; these drill-downs
@@ -152,8 +155,9 @@ def main() -> None:
     pressure = sorted([(x["ticker"], float(x["day"])) for x in selected_movers if float(x["day"]) < 0], key=lambda x: x[1])
     bar("losers.png", "Pressure points | today's largest negative moves", [s for s, _ in pressure[:8]], [v for _, v in pressure[:8]], height=max(3.4, .34 * len(pressure[:8]) + 1.5))
 
-    company_names = [(x["ticker"], float(x["day"]), x.get("volume_ratio") or 0) for x in selected_movers]
-    bar("company_movers.png", "Company exceptions | today's dynamic movers", [f"{s} {vratio:.2f}x" for s, _, vratio in company_names], [v for _, v, _ in company_names], height=max(4.0, .34 * len(company_names) + 1.5))
+    company_names = [(x["ticker"], float(x["day"]), x.get("volume_ratio")) for x in selected_movers]
+    company_labels = [f"{s} {vratio:.2f}x" if vratio is not None else f"{s} N/A" for s, _, vratio in company_names]
+    bar("company_movers.png", "Company exceptions | today's dynamic movers", company_labels, [v for _, v, _ in company_names], height=max(4.0, .34 * len(company_names) + 1.5))
 
     cross_names = present(["DX-Y.NYB", "CL=F", "BZ=F", "HG=F", "GC=F", "BTC-USD"])
     cross_labels = {"DX-Y.NYB": "DXY 美元", "CL=F": "WTI 原油", "BZ=F": "Brent 原油", "HG=F": "铜", "GC=F": "黄金", "BTC-USD": "BTC"}
