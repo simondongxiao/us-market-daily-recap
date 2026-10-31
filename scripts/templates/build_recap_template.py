@@ -290,8 +290,8 @@ table(["资产/指标", "收盘/状态", "当日", "5D", "读法"], [
     ["VIX / VVIX / SKEW", f"{val('^VIX')} / {val('^VVIX')} / {val('^SKEW')}", pct("^VIX"), "—", "以实际变动判断保护需求"],
     ["DXY / WTI / BTC", f"{val('DX-Y.NYB')} / {val('CL=F')} / {btc_usd_10k()}", f"DXY {pct('DX-Y.NYB')} / WTI {pct('CL=F')} / BTC {pct('BTC-USD')}", "—", "跨资产确认或反驳风险偏好叙事"],
 ], widths=[1.35, 1.35, .9, .9, 2.0])
-chart("sector_bar.png", "板块当日表现与成交相对强度", "Yahoo Finance Chart API；日收益率，成交相对30日均量。", width=5.15)
 para(f"图表读法：当日相对最强为 {sector_leaders}，相对最弱为 {sector_laggards}；上涨占比 {B.get('up_pct', float('nan')):.1f}%。需要把 ETF 表现和单股异常分开读，不能用行业平均替代个股催化。")
+chart("sector_bar.png", "板块当日表现与成交相对强度", "Yahoo Finance Chart API；日收益率，成交相对30日均量。", width=5.15)
 
 heading("2. Rotation & Leadership Dashboard")
 chart("rotation_sector_heatmap.png", "Sector Rotation Map（行业指数）", "本地 rotation_engine；1D/5D/20D，单位为百分比；括号内为行业名称。")
