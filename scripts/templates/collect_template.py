@@ -71,24 +71,48 @@ def fetch_chart(symbol: str, start: str = "2025-01-01", end: str = "2026-10-14",
 
 
 def fill_target_cash_session(symbol: str, frame: pd.DataFrame) -> pd.DataFrame:
-    """Reconstruct a missing completed daily close from regular-session 5m bars."""
+    """Backfill missing recent cash sessions from regular-session 5m bars.
+
+    Yahoo's daily endpoint can lag by more than the target session immediately
+    after the close. Backfilling only the target day would then compare it with
+    a stale prior close and create false 20%-40% movers. Pull a short intraday
+    window and restore every missing recent cash session before calculating
+    returns.
+    """
     target = frame.loc[frame.index == DAY, "close"] if DAY in frame.index else pd.Series(dtype=float)
     if not target.empty and target.notna().any():
         return frame
+    start_day = (DAY - pd.Timedelta(days=10)).strftime("%Y-%m-%d")
     next_day = (DAY + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
-    intraday = fetch_chart(symbol, DAY.strftime("%Y-%m-%d"), next_day, "5m")
+    intraday = fetch_chart(symbol, start_day, next_day, "5m")
     intraday = intraday.between_time("09:30", "16:00").dropna(subset=["close"])
     if intraday.empty:
         raise RuntimeError(f"target date missing after 5m fallback; last={frame.index[-1] if len(frame) else 'none'}")
-    bar = pd.DataFrame({
-        "open": [float(intraday["open"].dropna().iloc[0])],
-        "high": [float(intraday["high"].max())],
-        "low": [float(intraday["low"].min())],
-        "close": [float(intraday["close"].iloc[-1])],
-        "volume": [float(intraday["volume"].fillna(0).sum())],
-    }, index=pd.DatetimeIndex([DAY]))
-    frame = frame.drop(index=DAY, errors="ignore")
-    return pd.concat([frame, bar]).sort_index()
+    session_dates = intraday.index.normalize()
+    cash_bars = intraday.groupby(session_dates).agg(
+        open=("open", "first"),
+        high=("high", "max"),
+        low=("low", "min"),
+        close=("close", "last"),
+        volume=("volume", "sum"),
+    )
+    cash_bars = cash_bars.loc[cash_bars.index <= DAY]
+    missing = cash_bars.loc[~cash_bars.index.isin(frame.index)]
+    frame = pd.concat([frame, missing]).sort_index()
+
+    if DAY not in frame.index:
+        raise RuntimeError(f"target date missing after 5m fallback; last={frame.index[-1] if len(frame) else 'none'}")
+    sessions = cash_bars.index[cash_bars.index <= DAY]
+    if len(sessions) < 2:
+        raise RuntimeError("5m fallback did not include the prior cash session")
+    expected_previous = sessions[-2]
+    available_previous = frame.index[frame.index < DAY]
+    actual_previous = available_previous.max() if len(available_previous) else None
+    if actual_previous != expected_previous:
+        raise RuntimeError(
+            f"stale previous close after 5m fallback; expected={expected_previous.date()} actual={actual_previous}"
+        )
+    return frame
 
 
 def save_symbol(symbol: str) -> dict:
