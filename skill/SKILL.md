@@ -455,6 +455,8 @@ This section is mandatory. If proprietary flow data is unavailable, use public p
 
 Post-bell items must be clearly labeled and should not be used to explain the cash-session move unless timing supports it.
 
+Post-bell index-move rule: after the cash close, check major index futures/ETFs and any material index move before drafting. Write a post-bell index explanation only when there is a specific, time-stamped, publicly verifiable catalyst (for example, a major macro release, Fed communication, index-level policy decision, or broad market-moving company event) and the move is economically consistent with that catalyst. If the post-bell move is ordinary, mixed, or lacks a distinctive verifiable cause, omit the explanation rather than filling the section with generic risk-on/risk-off language. Keep any confirmed post-bell move separate from the completed cash-session attribution.
+
 ### 10. Post-Bell / Next Session
 
 Keep after-close events in a separate section. Apply the Event Gate: post-bell results, filings, guidance, research, conferences, or rumors can inform the next session but cannot explain the completed cash session unless they were publicly available before that session closed.
